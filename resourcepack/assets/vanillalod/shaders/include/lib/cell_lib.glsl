@@ -12,6 +12,10 @@ int cellPacked(vec4 color) {
     return (channels.r << 16) | (channels.g << 8) | channels.b;
 }
 
+bool cellIsEmpty(int packed) {
+    return packed == lodEmptyCell;
+}
+
 float cellBlocks(vec4 color) {
     int level = int(round(color.a * 255.0f)) & lodLevelMask;
     return float(1 << level);

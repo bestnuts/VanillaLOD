@@ -38,6 +38,11 @@ void main() {
 
     if (cellIsMarked(Position)) {
         int packed = cellPacked(Color);
+        if (cellIsEmpty(packed)) {
+            gl_Position = vec4(2.0f, 2.0f, 2.0f, 1.0f);
+            return;
+        }
+
         float blocks = cellBlocks(Color);
         vec2 corner = cellCorner(gl_VertexID);
 
