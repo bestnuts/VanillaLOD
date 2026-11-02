@@ -1,0 +1,33 @@
+# 계획 문서
+.docs/
+
+# IntelliJ IDEA
+.idea/
+*.iml
+*.ipr
+*.iws
+out/
+
+# Gradle
+.gradle/
+build/
+!gradle/wrapper/gradle-wrapper.jar
+
+# Maven
+target/
+
+# Java
+*.class
+*.log
+hs_err_pid*
+
+# 테스트 서버
+deploy/
+
+# 리소스팩 배포 산출물
+*.zip
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
