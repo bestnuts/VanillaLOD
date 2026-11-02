@@ -64,7 +64,8 @@ void main() {
         color = vec4(cell.tint, 1.0f);
     }
 
-    gl_Position = ProjMat * ModelViewMat * vec4(ws_position, 1.0f);
+    float depthScale = cellBlockSize > 0.0f ? 1.0f + lodDepthPush : 1.0f;
+    gl_Position = ProjMat * ModelViewMat * vec4(ws_position * depthScale, 1.0f);
     sphericalVertexDistance = fog_spherical_distance(ws_position);
     cylindricalVertexDistance = fog_cylindrical_distance(ws_position);
     vertexColor = color * sample_lightmap(Sampler2, UV2);

@@ -39,4 +39,7 @@ const float lodWallZShade = 0.8f;
 const float lodFogStartScale = 2.0f;
 const float lodFogEndScale = 3.9f;
 
+// Pushes LOD vertices slightly back along the view ray so overlapping real terrain always wins the depth test.
+const float lodDepthPush = 0.004f;
+
 #endif
