@@ -11,7 +11,11 @@ public record LodSettings(
         int updateIntervalTicks,
         int buildsPerUpdate,
         int pregenParallel,
-        int saveIntervalMinutes
+        int saveIntervalMinutes,
+        boolean autoFill,
+        boolean autoFillGenerate,
+        int autoFillIntervalTicks,
+        int autoFillQueue
 ) {
 
     public static LodSettings from(ConfigurationSection config) {
@@ -24,7 +28,11 @@ public record LodSettings(
                 config.getInt("update-interval-ticks", 10),
                 config.getInt("builds-per-update", 8),
                 config.getInt("pregen-parallel", 8),
-                config.getInt("save-interval-minutes", 5)
+                config.getInt("save-interval-minutes", 5),
+                config.getBoolean("auto-fill", true),
+                config.getBoolean("auto-fill-generate", true),
+                config.getInt("auto-fill-interval-ticks", 100),
+                config.getInt("auto-fill-queue", 256)
         );
     }
 }

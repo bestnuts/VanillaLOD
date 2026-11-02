@@ -6,6 +6,7 @@ import me.bestnuts.lod.cache.ChunkFiller;
 import me.bestnuts.lod.cache.LodCache;
 import me.bestnuts.lod.cache.SurfaceChangeTracker;
 import me.bestnuts.lod.command.LodCommand;
+import me.bestnuts.lod.view.LodAutoFill;
 import me.bestnuts.lod.view.LodViewService;
 import org.bukkit.plugin.java.JavaPlugin;
 
@@ -33,6 +34,7 @@ public final class VanillaLodPlugin extends JavaPlugin {
         getServer().getPluginManager().registerEvents(views, this);
         ChunkFiller filler = new ChunkFiller(cache, settings.pregenParallel());
         filler.start(this);
+        new LodAutoFill(this, filler, settings).start();
         getLifecycleManager().registerEventHandler(LifecycleEvents.COMMANDS,
                 event -> event.registrar().register("lod", new LodCommand(this, cache, views, filler)));
 

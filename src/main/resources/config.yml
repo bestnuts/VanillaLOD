@@ -11,3 +11,10 @@ update-interval-ticks: 10
 builds-per-update: 8
 pregen-parallel: 8
 save-interval-minutes: 5
+# 플레이어 LOD 범위 안에서 캐시에 없는 청크를 가까운 순으로 자동 로드한다.
+auto-fill: true
+# 아직 생성되지 않은 청크까지 생성할지. 끄면 이미 생성된 청크만 읽는다.
+auto-fill-generate: true
+auto-fill-interval-ticks: 100
+# 자동 채우기가 청크 로드 큐에 쌓아 둘 최대 요청 수.
+auto-fill-queue: 256
