@@ -10,7 +10,7 @@ import org.bukkit.util.Transformation;
 public final class TileDisplays {
 
     private static final Display.Brightness SKY_ONLY = new Display.Brightness(0, 15);
-    // The anchor sits at the world floor, far below the camera; clients cull displays beyond view range x 64 blocks.
+    // The anchor sits above the build height, far from the camera; clients cull displays beyond view range x 64 blocks.
     private static final float VIEW_RANGE = 16.0f;
 
     private TileDisplays() {

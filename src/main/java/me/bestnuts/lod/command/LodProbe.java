@@ -45,7 +45,7 @@ final class LodProbe {
         raw.setBillboard(Display.Billboard.CENTER);
 
         Location anchor = new Location(feet.getWorld(), feet.getBlockX() + 0.5, feet.getBlockY(), feet.getBlockZ() + 0.5);
-        TextDisplay marked = TileDisplays.spawn(anchor, LEVEL, SIZE, TileTransform.of(LEVEL, SIZE, feet.getBlockX() + 3, feet.getBlockZ() - 2, anchor), text);
+        TextDisplay marked = TileDisplays.spawn(anchor, LEVEL, SIZE, TileTransform.of(LEVEL, SIZE, feet.getBlockX() + 3, feet.getBlockZ() - 2, anchor, feet.getBlockY()), text);
 
         for (TextDisplay display : List.of(raw, marked)) {
             player.showEntity(plugin, display);

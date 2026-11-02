@@ -186,7 +186,7 @@ final class PlayerLodView {
     }
 
     private void reanchor(Location location) {
-        anchor = new Location(world, location.getBlockX() + 0.5, cache.minY(), location.getBlockZ() + 0.5);
+        anchor = new Location(world, location.getBlockX() + 0.5, world.getMaxHeight(), location.getBlockZ() + 0.5);
         displays.forEach((tile, display) -> {
             display.teleport(anchor);
             display.setTransformation(transformation(tile));
@@ -194,7 +194,7 @@ final class PlayerLodView {
     }
 
     private Transformation transformation(TileKey tile) {
-        return TileTransform.of(tile.level(), TileKey.CELLS, tile.originX(), tile.originZ(), anchor);
+        return TileTransform.of(tile.level(), TileKey.CELLS, tile.originX(), tile.originZ(), anchor, cache.minY());
     }
 
     private static double horizontalDistance(Location a, Location b) {
