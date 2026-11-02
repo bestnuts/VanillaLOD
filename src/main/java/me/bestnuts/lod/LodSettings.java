@@ -19,7 +19,7 @@ public record LodSettings(
                 config.getDouble("detail", 2.0),
                 config.getInt("min-level", 0),
                 config.getInt("max-level", 6),
-                config.getInt("max-distance", 1024),
+                config.getInt("max-distance", 4096),
                 config.getInt("anchor-grid", 128),
                 config.getInt("update-interval-ticks", 10),
                 config.getInt("builds-per-update", 8),

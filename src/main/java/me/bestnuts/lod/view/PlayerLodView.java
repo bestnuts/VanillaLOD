@@ -31,8 +31,6 @@ final class PlayerLodView {
     private record TileTexts(Component top, Component walls) {
     }
 
-    private static final int FAR_PLANE_SCALE = 4;
-    private static final int FAR_PLANE_MARGIN = 16;
     private static final double REANCHOR_FRACTION = 0.75;
 
     private final Plugin plugin;
@@ -79,9 +77,9 @@ final class PlayerLodView {
             reanchor(location);
         }
 
-        int clientDistance = Math.min(player.getSendViewDistance(), player.getClientViewDistance());
-        double inner = clientDistance * 16.0;
-        double outer = Math.min(settings.maxDistance(), player.getClientViewDistance() * 16.0 * FAR_PLANE_SCALE - FAR_PLANE_MARGIN);
+        int renderDistance = Math.min(player.getSendViewDistance(), player.getClientViewDistance());
+        double inner = renderDistance * 16.0;
+        double outer = Math.min(settings.maxDistance(), inner * LodBits.FOG_END_SCALE);
         desired = TileSelector.select(location.getX(), location.getZ(), inner, outer, settings);
 
         Iterator<Map.Entry<TileKey, TileEntities>> iterator = displays.entrySet().iterator();

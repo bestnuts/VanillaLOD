@@ -36,6 +36,7 @@ const float lodWallXShade = 0.6f;
 const float lodWallZShade = 0.8f;
 
 // Terrain and LOD share one render distance fog stretched towards the 4x far plane.
+// lodFogEndScale must match me.bestnuts.lod.encode.LodBits.FOG_END_SCALE.
 const float lodFogStartScale = 2.0f;
 const float lodFogEndScale = 3.9f;
 
