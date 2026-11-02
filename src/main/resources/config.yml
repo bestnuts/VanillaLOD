@@ -1,0 +1,13 @@
+# 타일을 더 작은 레벨로 나누는 거리 배수. 타일 한 변 x detail 보다 가까우면 분할한다.
+detail: 4.0
+# 셀 한 변 = 2^level 블록. 최대 7.
+min-level: 0
+max-level: 6
+# 클라이언트 far plane(렌더 거리 x 4)과 이 값 중 작은 쪽까지 그린다.
+max-distance: 1024
+# 디스플레이 앵커를 플레이어 위치로 옮기는 이동 거리. 서버 misc 엔티티 추적 거리보다 작아야 한다.
+anchor-step: 16
+update-interval-ticks: 10
+builds-per-update: 8
+pregen-parallel: 8
+save-interval-minutes: 5
