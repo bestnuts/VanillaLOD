@@ -1,66 +1,70 @@
 package me.bestnuts.lod.cache;
 
-import java.util.ArrayDeque;
-import java.util.Deque;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import org.bukkit.World;
+import org.bukkit.plugin.Plugin;
 import org.bukkit.scheduler.BukkitRunnable;
 
 public final class PregenTask extends BukkitRunnable {
 
     private static final int REPORT_EVERY = 1024;
+    private static final long CHECK_INTERVAL_TICKS = 20L;
 
-    private final World world;
-    private final LodCache cache;
-    private final int parallel;
     private final Consumer<String> progress;
-    private final Deque<int[]> pending = new ArrayDeque<>();
-    private final AtomicInteger inFlight = new AtomicInteger();
+    private final AtomicInteger completed = new AtomicInteger();
     private final int total;
-    private int started;
+    private int reported;
 
-    public PregenTask(World world, int centerChunkX, int centerChunkZ, int radius, LodCache cache, int parallel, Consumer<String> progress) {
-        this.world = world;
-        this.cache = cache;
-        this.parallel = parallel;
+    public PregenTask(World world, int centerChunkX, int centerChunkZ, int radius, ChunkFiller filler, Consumer<String> progress) {
         this.progress = progress;
-        LodWorldCache worldCache = cache.world(world);
+        int submitted = 0;
         for (int ring = 0; ring <= radius; ring++) {
-            for (int dz = -ring; dz <= ring; dz++) {
-                for (int dx = -ring; dx <= ring; dx++) {
-                    if (Math.max(Math.abs(dx), Math.abs(dz)) == ring && !worldCache.contains(centerChunkX + dx, centerChunkZ + dz)) {
-                        pending.add(new int[]{centerChunkX + dx, centerChunkZ + dz});
-                    }
+            for (int step = 0; step < Math.max(1, ring * 8); step++) {
+                int[] offset = ringOffset(ring, step);
+                if (filler.submit(world, centerChunkX + offset[0], centerChunkZ + offset[1], true, completed::incrementAndGet)) {
+                    submitted++;
                 }
             }
         }
-        this.total = pending.size();
+        this.total = submitted;
     }
 
     public int total() {
         return total;
     }
 
+    public void start(Plugin plugin) {
+        runTaskTimer(plugin, CHECK_INTERVAL_TICKS, CHECK_INTERVAL_TICKS);
+    }
+
     @Override
     public void run() {
-        while (inFlight.get() < parallel && !pending.isEmpty()) {
-            int[] chunk = pending.poll();
-            inFlight.incrementAndGet();
-            started++;
-            if (started % REPORT_EVERY == 0) {
-                progress.accept(started + "/" + total);
-            }
-            world.getChunkAtAsync(chunk[0], chunk[1], true).whenComplete((loaded, error) -> {
-                if (loaded != null && !cache.world(world).contains(chunk[0], chunk[1])) {
-                    cache.capture(loaded);
-                }
-                inFlight.decrementAndGet();
-            });
-        }
-        if (pending.isEmpty() && inFlight.get() == 0) {
+        int done = completed.get();
+        if (done >= total) {
             progress.accept("done " + total);
             cancel();
+            return;
         }
+        if (done / REPORT_EVERY > reported) {
+            reported = done / REPORT_EVERY;
+            progress.accept(done + "/" + total);
+        }
+    }
+
+    // Walks the square ring of Chebyshev radius `ring` clockwise from its top-left corner.
+    private static int[] ringOffset(int ring, int step) {
+        if (ring == 0) {
+            return new int[]{0, 0};
+        }
+        int side = 2 * ring;
+        int edge = step / side;
+        int along = step % side;
+        return switch (edge) {
+            case 0 -> new int[]{-ring + along, -ring};
+            case 1 -> new int[]{ring, -ring + along};
+            case 2 -> new int[]{ring - along, ring};
+            default -> new int[]{-ring, ring - along};
+        };
     }
 }

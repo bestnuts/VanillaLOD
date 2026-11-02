@@ -2,6 +2,7 @@ package me.bestnuts.lod;
 
 import io.papermc.paper.plugin.lifecycle.event.types.LifecycleEvents;
 import me.bestnuts.lod.cache.ChunkCaptureListener;
+import me.bestnuts.lod.cache.ChunkFiller;
 import me.bestnuts.lod.cache.LodCache;
 import me.bestnuts.lod.cache.SurfaceChangeTracker;
 import me.bestnuts.lod.command.LodCommand;
@@ -30,8 +31,10 @@ public final class VanillaLodPlugin extends JavaPlugin {
         getServer().getPluginManager().registerEvents(changes, this);
         changes.start(this);
         getServer().getPluginManager().registerEvents(views, this);
+        ChunkFiller filler = new ChunkFiller(cache, settings.pregenParallel());
+        filler.start(this);
         getLifecycleManager().registerEventHandler(LifecycleEvents.COMMANDS,
-                event -> event.registrar().register("lod", new LodCommand(this, cache, views, settings)));
+                event -> event.registrar().register("lod", new LodCommand(this, cache, views, filler)));
 
         long saveInterval = settings.saveIntervalMinutes() * TICKS_PER_MINUTE;
         getServer().getScheduler().runTaskTimerAsynchronously(this, cache::saveAll, saveInterval, saveInterval);

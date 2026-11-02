@@ -4,7 +4,7 @@ import io.papermc.paper.command.brigadier.BasicCommand;
 import io.papermc.paper.command.brigadier.CommandSourceStack;
 import java.util.Collection;
 import java.util.List;
-import me.bestnuts.lod.LodSettings;
+import me.bestnuts.lod.cache.ChunkFiller;
 import me.bestnuts.lod.cache.LodCache;
 import me.bestnuts.lod.cache.PregenTask;
 import me.bestnuts.lod.view.LodViewService;
@@ -20,13 +20,13 @@ public final class LodCommand implements BasicCommand {
     private final Plugin plugin;
     private final LodCache cache;
     private final LodViewService views;
-    private final LodSettings settings;
+    private final ChunkFiller filler;
 
-    public LodCommand(Plugin plugin, LodCache cache, LodViewService views, LodSettings settings) {
+    public LodCommand(Plugin plugin, LodCache cache, LodViewService views, ChunkFiller filler) {
         this.plugin = plugin;
         this.cache = cache;
         this.views = views;
-        this.settings = settings;
+        this.filler = filler;
     }
 
     @Override
@@ -83,9 +83,9 @@ public final class LodCommand implements BasicCommand {
             return;
         }
         Location center = source.getLocation();
-        PregenTask task = new PregenTask(center.getWorld(), center.getBlockX() >> 4, center.getBlockZ() >> 4, radius, cache, settings.pregenParallel(),
+        PregenTask task = new PregenTask(center.getWorld(), center.getBlockX() >> 4, center.getBlockZ() >> 4, radius, filler,
                 message -> source.getSender().sendMessage(Component.text("LOD pregen " + message)));
         source.getSender().sendMessage(Component.text("LOD pregen " + task.total() + " chunks"));
-        task.runTaskTimer(plugin, 1L, 1L);
+        task.start(plugin);
     }
 }
