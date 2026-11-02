@@ -1,0 +1,43 @@
+package me.bestnuts.lod.view;
+
+import me.bestnuts.lod.encode.LodBits;
+
+public record TileKey(int level, int tileX, int tileZ) {
+
+    public static final int CELLS = 16;
+
+    public int cellBlocks() {
+        return LodBits.cellBlocks(level);
+    }
+
+    public int blocks() {
+        return CELLS * cellBlocks();
+    }
+
+    public int originX() {
+        return tileX * blocks();
+    }
+
+    public int originZ() {
+        return tileZ * blocks();
+    }
+
+    public double nearestDistance(double x, double z) {
+        double dx = Math.max(Math.max(originX() - x, 0.0), x - (originX() + blocks()));
+        double dz = Math.max(Math.max(originZ() - z, 0.0), z - (originZ() + blocks()));
+        return Math.hypot(dx, dz);
+    }
+
+    public double farthestDistance(double x, double z) {
+        double dx = Math.max(Math.abs(originX() - x), Math.abs(originX() + blocks() - x));
+        double dz = Math.max(Math.abs(originZ() - z), Math.abs(originZ() + blocks() - z));
+        return Math.hypot(dx, dz);
+    }
+
+    public boolean overlapsChunk(int chunkX, int chunkZ) {
+        int minX = chunkX << 4;
+        int minZ = chunkZ << 4;
+        return minX < originX() + blocks() && minX + 16 > originX()
+                && minZ < originZ() + blocks() && minZ + 16 > originZ();
+    }
+}
