@@ -5,6 +5,7 @@
 #include <minecraft:fog.glsl>
 #include <vanillalod:conf/lod_conf.glsl>
 #include <vanillalod:frag/cell_frag.glsl>
+#include <vanillalod:frag/horizon_frag.glsl>
 #endif
 
 #include <minecraft:dynamictransforms.glsl>
@@ -43,8 +44,8 @@ vec4 calculateFinalColor(vec4 color) {
     float renderDistanceStart = FogRenderDistanceStart;
     float renderDistanceEnd = FogRenderDistanceEnd;
     if (cellBlockSize > 0.0f) {
-        renderDistanceStart = FogRenderDistanceEnd * lodFogStartScale;
-        renderDistanceEnd = FogRenderDistanceEnd * lodFogEndScale;
+        renderDistanceStart = horizonFogStart();
+        renderDistanceEnd = horizonFogEnd();
     }
 
     color = apply_fog(color, sphericalVertexDistance, cylindricalVertexDistance, FogEnvironmentalStart, FogEnvironmentalEnd, renderDistanceStart, renderDistanceEnd, fogColor);

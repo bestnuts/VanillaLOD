@@ -35,8 +35,8 @@ const float lodCornerPhaseHigh = 0.9f;
 const float lodWallXShade = 0.6f;
 const float lodWallZShade = 0.8f;
 
-// LOD cells sit beyond the vanilla render distance, up to the 4x far plane.
-const float lodFogStartScale = 3.0f;
+// Terrain and LOD share one render distance fog stretched towards the 4x far plane.
+const float lodFogStartScale = 2.0f;
 const float lodFogEndScale = 3.9f;
 
 #endif
