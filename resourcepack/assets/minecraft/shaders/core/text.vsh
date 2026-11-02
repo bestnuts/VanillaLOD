@@ -47,7 +47,7 @@ void main() {
 
         int opacity = cellOpacity(Color);
         float blocks = cellBlocks(opacity);
-        vec2 corner = cellCorner(gl_VertexIndex);
+        vec2 corner = cellCorner(Position, blocks);
         vec3 ws_origin = cellOrigin(Position, corner, blocks);
 
         CellVertex cell;

@@ -27,8 +27,10 @@ const int lodWallTintMask = 0x3F;
 // A wall display stacks the x edge rows first, then the z edge rows, each one tile tall.
 const float lodTileCells = 16.0f;
 
-// Sprite glyphs are 8 units tall on a 10 unit text display line pitch.
-const float lodGlyphDepth = 0.8f;
+// Sprite glyphs are 8 units on a 10 unit cell pitch in both axes, so glyph edges land at 0 and 0.8 of a cell.
+const float lodGlyphSize = 0.8f;
+const float lodCornerPhaseLow = 0.4f;
+const float lodCornerPhaseHigh = 0.9f;
 
 const float lodWallXShade = 0.6f;
 const float lodWallZShade = 0.8f;

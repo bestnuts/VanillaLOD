@@ -11,29 +11,35 @@ public final class TileText {
     public record Glyph(Key sprite, int packed) {
     }
 
-    public static final int GLYPH_ADVANCE = 8;
+    // An 8 unit sprite plus a 2 unit spacer; resourcepack/assets/vanillalod/font/cell.json defines the spacers.
+    public static final int CELL_ADVANCE = 10;
 
     private static final Key BLOCK_ATLAS = Key.key("minecraft", "blocks");
-    // Two default font spaces keep the 8 unit sprite advance without emitting any quad.
-    private static final Component EMPTY = Component.text("  ");
+    private static final Key CELL_FONT = Key.key("vanillalod", "cell");
+    private static final Component SPACER = Component.text("");
+    private static final Component EMPTY = Component.text("");
 
     private TileText() {
     }
 
     public static Component encode(Glyph[] glyphs, int columns) {
-        TextComponent.Builder text = Component.text();
+        TextComponent.Builder text = Component.text().font(CELL_FONT);
         for (int i = 0; i < glyphs.length; i++) {
             if (i > 0 && i % columns == 0) {
                 text.append(Component.newline());
             }
             Glyph glyph = glyphs[i];
-            text.append(glyph == null ? EMPTY : sprite(glyph.sprite(), glyph.packed()));
+            if (glyph == null) {
+                text.append(EMPTY);
+            } else {
+                text.append(sprite(glyph.sprite(), glyph.packed())).append(SPACER);
+            }
         }
         return text.build();
     }
 
     public static int lineWidth(int columns) {
-        return columns * GLYPH_ADVANCE;
+        return columns * CELL_ADVANCE;
     }
 
     private static Component sprite(Key sprite, int packed) {

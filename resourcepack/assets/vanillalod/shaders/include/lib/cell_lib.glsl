@@ -1,6 +1,7 @@
 #ifndef VANILLALOD_CELL_LIB_GLSL
 #define VANILLALOD_CELL_LIB_GLSL
 
+#include <minecraft:globals.glsl>
 #include <vanillalod:conf/lod_conf.glsl>
 
 struct CellVertex {
@@ -55,14 +56,19 @@ vec3 cellWallTint(int packed) {
     return vec3(float((tint >> 4) & 0x3), float((tint >> 2) & 0x3), float(tint & 0x3)) / 3.0f;
 }
 
-// Vertex order of a sprite glyph: 0 left-top, 1 left-bottom, 2 right-bottom, 3 right-top.
-vec2 cellCorner(int vertexIndex) {
-    int corner = vertexIndex % 4;
-    return vec2(corner >= 2 ? 1.0f : 0.0f, (corner == 1 || corner == 2) ? 1.0f : 0.0f);
+float cellCornerAxis(float phase) {
+    return phase > lodCornerPhaseLow && phase < lodCornerPhaseHigh ? 1.0f : 0.0f;
+}
+
+// Vertex indices carry a per draw base offset, so corners come from the glyph edge phase on the world cell grid.
+vec2 cellCorner(vec3 ws_position, float blocks) {
+    ivec2 cameraCell = CameraBlockPos.xz & ivec2(int(blocks) - 1);
+    vec2 phase = fract((ws_position.xz - CameraOffset.xz + vec2(cameraCell)) / blocks);
+    return vec2(cellCornerAxis(phase.x), cellCornerAxis(phase.y));
 }
 
 vec3 cellOrigin(vec3 ws_position, vec2 corner, float blocks) {
-    return ws_position - vec3(corner.x * blocks, 0.0f, corner.y * blocks * lodGlyphDepth);
+    return ws_position - vec3(corner.x, 0.0f, corner.y) * blocks * lodGlyphSize;
 }
 
 CellVertex cellTopVertex(vec3 ws_origin, vec2 corner, float blocks, int packed) {
