@@ -163,13 +163,13 @@ final class PlayerLodView {
 
     private TileTexts encode(TileKey tile, double playerX, double playerZ, double inner) {
         int cellBlocks = tile.cellBlocks();
-        int gridSize = TileKey.CELLS + 1;
+        int gridSize = TileGlyphs.gridSize(TileKey.CELLS);
         double innerSquared = inner * inner;
         LodCell[] grid = new LodCell[gridSize * gridSize];
         for (int row = 0; row < gridSize; row++) {
             for (int column = 0; column < gridSize; column++) {
-                int cellX = tile.originX() + column * cellBlocks;
-                int cellZ = tile.originZ() + row * cellBlocks;
+                int cellX = tile.originX() + (column - 1) * cellBlocks;
+                int cellZ = tile.originZ() + (row - 1) * cellBlocks;
                 double dx = cellX + cellBlocks / 2.0 - playerX;
                 double dz = cellZ + cellBlocks / 2.0 - playerZ;
                 if (dx * dx + dz * dz >= innerSquared) {
@@ -179,7 +179,7 @@ final class PlayerLodView {
         }
         return new TileTexts(
                 TileText.encode(TileGlyphs.tops(grid, TileKey.CELLS), TileKey.CELLS),
-                TileText.encode(TileGlyphs.walls(grid, TileKey.CELLS), TileKey.CELLS)
+                TileText.encode(TileGlyphs.walls(grid, TileKey.CELLS, cellBlocks), TileGlyphs.wallColumns(TileKey.CELLS))
         );
     }
 
@@ -196,7 +196,7 @@ final class PlayerLodView {
         }
         entities = new TileEntities(
                 TileDisplays.spawn(anchor, LodBits.opacity(LodBits.KIND_TOP, tile.level()), TileKey.CELLS, topTransformation(tile), texts.top()),
-                TileDisplays.spawn(anchor, LodBits.opacity(LodBits.KIND_WALL, tile.level()), TileKey.CELLS, wallTransformation(tile), texts.walls())
+                TileDisplays.spawn(anchor, LodBits.opacity(LodBits.KIND_WALL, tile.level()), TileGlyphs.wallColumns(TileKey.CELLS), wallTransformation(tile), texts.walls())
         );
         entities.displays().forEach(display -> player.showEntity(plugin, display));
         displays.put(tile, entities);
@@ -216,11 +216,11 @@ final class PlayerLodView {
     }
 
     private Transformation topTransformation(TileKey tile) {
-        return TileTransform.of(tile.level(), TileKey.CELLS, TileKey.CELLS, tile.originX(), tile.originZ(), anchor, cache.minY());
+        return TileTransform.top(tile.level(), TileKey.CELLS, tile.originX(), tile.originZ(), anchor, cache.minY());
     }
 
     private Transformation wallTransformation(TileKey tile) {
-        return TileTransform.of(tile.level(), TileKey.CELLS, 2 * TileKey.CELLS, tile.originX(), tile.originZ(), anchor, cache.minY());
+        return TileTransform.walls(tile.level(), TileKey.CELLS, tile.originX(), tile.originZ(), anchor, cache.minY());
     }
 
     private int anchorGrid() {

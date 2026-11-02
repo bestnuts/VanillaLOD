@@ -16,7 +16,10 @@ const int lodHeightShift = 15;
 const int lodHeightMask = 0x1FF;
 
 const int lodTintedBit = 1 << 14;
-const int lodPayloadMask = 0x3FFF;
+const int lodRunXShift = 12;
+const int lodRunZShift = 10;
+const int lodRunMask = 0x3;
+const int lodTopTintMask = 0x3FF;
 
 const int lodDepthShift = 8;
 const int lodDepthMask = 0x7F;
@@ -24,8 +27,8 @@ const int lodWallZAxisBit = 1 << 7;
 const int lodWallPositiveBit = 1 << 6;
 const int lodWallTintMask = 0x3F;
 
-// A wall display stacks the x edge rows first, then the z edge rows, each one tile tall.
-const float lodTileCells = 16.0f;
+// A wall display starts one cell before the tile and stacks 17 x edge rows, then 17 z edge rows.
+const float lodWallRows = 17.0f;
 
 // Sprite glyphs are 8 units on a 10 unit cell pitch in both axes, so glyph edges land at 0 and 0.8 of a cell.
 const float lodGlyphSize = 0.8f;

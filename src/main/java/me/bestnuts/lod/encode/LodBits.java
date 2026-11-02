@@ -9,6 +9,7 @@ public final class LodBits {
     public static final int MAX_LEVEL = 7;
     public static final int MAX_HEIGHT = 510;
     public static final int MAX_WALL_DEPTH = 127;
+    public static final int MAX_RUN = 4;
     public static final int NO_TINT = -1;
     public static final int EMPTY_CELL = 0xFFFFFF;
 
@@ -20,6 +21,8 @@ public final class LodBits {
 
     private static final int HEIGHT_SHIFT = 15;
     private static final int TINTED_BIT = 1 << 14;
+    private static final int RUN_X_SHIFT = 12;
+    private static final int RUN_Z_SHIFT = 10;
 
     private static final int DEPTH_SHIFT = 8;
     private static final int WALL_Z_AXIS_BIT = 1 << 7;
@@ -29,8 +32,8 @@ public final class LodBits {
     private LodBits() {
     }
 
-    public static int cell(int height, int tintRgb) {
-        int packed = height(height);
+    public static int cell(int height, int tintRgb, int runX, int runZ) {
+        int packed = height(height) | (Math.clamp(runX, 1, MAX_RUN) - 1) << RUN_X_SHIFT | (Math.clamp(runZ, 1, MAX_RUN) - 1) << RUN_Z_SHIFT;
         if (tintRgb != NO_TINT) {
             packed |= TINTED_BIT | topTint(tintRgb);
         }
@@ -61,10 +64,10 @@ public final class LodBits {
     }
 
     private static int topTint(int rgb) {
-        int red = (rgb >> 16 & 0xFF) >> 3;
-        int green = (rgb >> 8 & 0xFF) >> 3;
-        int blue = (rgb & 0xFF) >> 4;
-        return red << 9 | green << 4 | blue;
+        int red = (rgb >> 16 & 0xFF) >> 5;
+        int green = (rgb >> 8 & 0xFF) >> 4;
+        int blue = (rgb & 0xFF) >> 5;
+        return red << 7 | green << 3 | blue;
     }
 
     private static int wallTint(int rgb) {

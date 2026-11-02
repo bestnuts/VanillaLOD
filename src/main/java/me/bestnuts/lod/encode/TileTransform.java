@@ -19,7 +19,16 @@ public final class TileTransform {
     private TileTransform() {
     }
 
-    public static Transformation of(int level, int columns, int rows, double originX, double originZ, Location anchor, int floorY) {
+    public static Transformation top(int level, int size, double originX, double originZ, Location anchor, int floorY) {
+        return of(level, size, size, originX, originZ, anchor, floorY);
+    }
+
+    public static Transformation walls(int level, int size, double originX, double originZ, Location anchor, int floorY) {
+        int cell = LodBits.cellBlocks(level);
+        return of(level, TileGlyphs.wallColumns(size), TileGlyphs.wallRows(size), originX - cell, originZ - cell, anchor, floorY);
+    }
+
+    private static Transformation of(int level, int columns, int rows, double originX, double originZ, Location anchor, int floorY) {
         float cell = LodBits.cellBlocks(level);
         float scale = cell / (TileText.CELL_ADVANCE * TEXT_UNIT);
 

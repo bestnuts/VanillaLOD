@@ -43,12 +43,12 @@ vec3 cellTopTint(int packed) {
     if ((packed & lodTintedBit) == 0) {
         return vec3(1.0f);
     }
-    int payload = packed & lodPayloadMask;
-    return vec3(
-        float((payload >> 9) & 0x1F) / 31.0f,
-        float((payload >> 4) & 0x1F) / 31.0f,
-        float(payload & 0xF) / 15.0f
-    );
+    int tint = packed & lodTopTintMask;
+    return vec3(float((tint >> 7) & 0x7) / 7.0f, float((tint >> 3) & 0xF) / 15.0f, float(tint & 0x7) / 7.0f);
+}
+
+vec2 cellTopRun(int packed) {
+    return vec2(float(((packed >> lodRunXShift) & lodRunMask) + 1), float(((packed >> lodRunZShift) & lodRunMask) + 1));
 }
 
 vec3 cellWallTint(int packed) {
@@ -71,9 +71,11 @@ vec3 cellOrigin(vec3 ws_position, vec2 corner, float blocks) {
     return ws_position - vec3(corner.x, 0.0f, corner.y) * blocks * lodGlyphSize;
 }
 
+// A merged top glyph stretches over a run of identical cells whose own glyphs are blank.
 CellVertex cellTopVertex(vec3 ws_origin, vec2 corner, float blocks, int packed) {
-    vec3 ws_position = ws_origin + vec3(corner.x * blocks, lodMarkerOffset + cellHeight(packed), corner.y * blocks);
-    return CellVertex(ws_position, corner * blocks, cellTopTint(packed));
+    vec2 ls_span = cellTopRun(packed) * blocks;
+    vec3 ws_position = ws_origin + vec3(corner.x * ls_span.x, lodMarkerOffset + cellHeight(packed), corner.y * ls_span.y);
+    return CellVertex(ws_position, corner * ls_span, cellTopTint(packed));
 }
 
 // Walls face the lower neighbour so their winding stays front facing from that side.
@@ -92,7 +94,7 @@ CellVertex cellWallVertex(vec3 ws_origin, vec2 corner, float blocks, int packed)
 
     bool upper = positive ? corner.y < 0.5f : corner.y > 0.5f;
     float height = upper ? top : top - depth;
-    vec3 ws_position = ws_origin + vec3(corner.x * blocks, height, blocks - lodTileCells * blocks);
+    vec3 ws_position = ws_origin + vec3(corner.x * blocks, height, blocks - lodWallRows * blocks);
     return CellVertex(ws_position, vec2(corner.x * blocks, top - height), tint * lodWallZShade);
 }
 
