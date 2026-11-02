@@ -38,8 +38,8 @@ vec3 cellTint(int packed) {
 }
 
 // Vertex order of a sprite glyph: 0 left-top, 1 left-bottom, 2 right-bottom, 3 right-top.
-vec2 cellCorner(int vertexId) {
-    int corner = vertexId % 4;
+vec2 cellCorner(int vertexIndex) {
+    int corner = vertexIndex % 4;
     return vec2(corner >= 2 ? 1.0f : 0.0f, (corner == 1 || corner == 2) ? 1.0f : 0.0f);
 }
 

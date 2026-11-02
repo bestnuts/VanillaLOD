@@ -44,7 +44,7 @@ void main() {
         }
 
         float blocks = cellBlocks(Color);
-        vec2 corner = cellCorner(gl_VertexID);
+        vec2 corner = cellCorner(gl_VertexIndex);
 
         ws_position.y += lodMarkerOffset + cellHeight(packed);
         ws_position.z += corner.y * lodRowGap * blocks;
