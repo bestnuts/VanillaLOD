@@ -23,6 +23,7 @@ layout(location = 0) out float sphericalVertexDistance;
 layout(location = 1) out float cylindricalVertexDistance;
 layout(location = 4) out vec2 ls_cellQuad;
 layout(location = 5) flat out float cellBlockSize;
+layout(location = 6) out vec2 ls_texBlocks;
 #endif
 
 layout(location = 2) out vec4 vertexColor;
@@ -33,6 +34,7 @@ void main() {
 
 #if !defined(IS_GUI) && !defined(IS_SEE_THROUGH)
     ls_cellQuad = vec2(0.0f);
+    ls_texBlocks = vec2(0.0f);
     cellBlockSize = 0.0f;
     vec4 color = Color;
 
@@ -43,15 +45,23 @@ void main() {
             return;
         }
 
-        float blocks = cellBlocks(Color);
+        int opacity = cellOpacity(Color);
+        float blocks = cellBlocks(opacity);
         vec2 corner = cellCorner(gl_VertexIndex);
+        vec3 ws_origin = cellOrigin(Position, corner, blocks);
 
-        ws_position.y += lodMarkerOffset + cellHeight(packed);
-        ws_position.z += corner.y * lodRowGap * blocks;
+        CellVertex cell;
+        if (cellKind(opacity) == lodKindWall) {
+            cell = cellWallVertex(ws_origin, corner, blocks, packed);
+        } else {
+            cell = cellTopVertex(ws_origin, corner, blocks, packed);
+        }
 
+        ws_position = cell.ws_position;
         ls_cellQuad = corner;
+        ls_texBlocks = cell.ls_texBlocks;
         cellBlockSize = blocks;
-        color = vec4(cellTint(packed), 1.0f);
+        color = vec4(cell.tint, 1.0f);
     }
 
     gl_Position = ProjMat * ModelViewMat * vec4(ws_position, 1.0f);

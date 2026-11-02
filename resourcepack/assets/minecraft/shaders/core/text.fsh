@@ -17,6 +17,7 @@ layout(location = 0) in float sphericalVertexDistance;
 layout(location = 1) in float cylindricalVertexDistance;
 layout(location = 4) in vec2 ls_cellQuad;
 layout(location = 5) flat in float cellBlockSize;
+layout(location = 6) in vec2 ls_texBlocks;
 #endif
 
 layout(location = 2) in vec4 vertexColor;
@@ -55,7 +56,7 @@ vec4 calculateFinalColor(vec4 color) {
 void main() {
     #if !defined(IS_GUI) && !defined(IS_SEE_THROUGH)
     if (cellBlockSize > 0.0f) {
-        vec4 cellColor = cellSampleSprite(Sampler0, texCoord0, ls_cellQuad, cellBlockSize) * vertexColor * ColorModulator;
+        vec4 cellColor = cellSampleSprite(Sampler0, texCoord0, ls_cellQuad, ls_texBlocks) * vertexColor * ColorModulator;
         #ifdef OIT_ALPHA_ONLY
         executeAlphaOnlyPhase(gl_FragCoord.z, cellColor.a);
         #else

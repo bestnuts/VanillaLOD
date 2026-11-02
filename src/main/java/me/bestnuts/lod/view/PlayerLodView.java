@@ -13,19 +13,23 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 import me.bestnuts.lod.LodSettings;
 import me.bestnuts.lod.cache.LodWorldCache;
+import me.bestnuts.lod.encode.LodBits;
 import me.bestnuts.lod.encode.LodCell;
 import me.bestnuts.lod.encode.TileDisplays;
+import me.bestnuts.lod.encode.TileGlyphs;
 import me.bestnuts.lod.encode.TileText;
 import me.bestnuts.lod.encode.TileTransform;
 import net.kyori.adventure.text.Component;
 import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.entity.Player;
-import org.bukkit.entity.TextDisplay;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.util.Transformation;
 
 final class PlayerLodView {
+
+    private record TileTexts(Component top, Component walls) {
+    }
 
     private static final int FAR_PLANE_SCALE = 4;
     private static final int FAR_PLANE_MARGIN = 16;
@@ -36,7 +40,7 @@ final class PlayerLodView {
     private final LodWorldCache cache;
     private final LodSettings settings;
     private final Executor builder;
-    private final Map<TileKey, TextDisplay> displays = new HashMap<>();
+    private final Map<TileKey, TileEntities> displays = new HashMap<>();
     private final Set<TileKey> building = new HashSet<>();
     private final Set<TileKey> dirty = new LinkedHashSet<>();
     private final Deque<TileKey> missing = new ArrayDeque<>();
@@ -62,7 +66,13 @@ final class PlayerLodView {
 
     void update(Collection<Long> cachedChunks) {
         Location location = player.getLocation();
-        displays.values().removeIf(display -> !display.isValid());
+        displays.values().removeIf(entities -> {
+            if (entities.isValid()) {
+                return false;
+            }
+            entities.remove();
+            return true;
+        });
 
         if (anchor == null || horizontalDistance(location, anchor) > settings.anchorStep()) {
             reanchor(location);
@@ -73,9 +83,9 @@ final class PlayerLodView {
         double outer = Math.min(settings.maxDistance(), player.getClientViewDistance() * 16.0 * FAR_PLANE_SCALE - FAR_PLANE_MARGIN);
         desired = TileSelector.select(location.getX(), location.getZ(), inner, outer, settings);
 
-        Iterator<Map.Entry<TileKey, TextDisplay>> iterator = displays.entrySet().iterator();
+        Iterator<Map.Entry<TileKey, TileEntities>> iterator = displays.entrySet().iterator();
         while (iterator.hasNext()) {
-            Map.Entry<TileKey, TextDisplay> entry = iterator.next();
+            Map.Entry<TileKey, TileEntities> entry = iterator.next();
             if (!desired.contains(entry.getKey())) {
                 entry.getValue().remove();
                 iterator.remove();
@@ -117,7 +127,7 @@ final class PlayerLodView {
 
     void close() {
         closed = true;
-        displays.values().forEach(TextDisplay::remove);
+        displays.values().forEach(TileEntities::remove);
         displays.clear();
     }
 
@@ -136,9 +146,9 @@ final class PlayerLodView {
             double z = location.getZ();
             double inner = innerRadius;
             CompletableFuture.supplyAsync(() -> encode(tile, x, z, inner), builder)
-                    .whenComplete((text, error) -> {
+                    .whenComplete((texts, error) -> {
                         if (plugin.isEnabled()) {
-                            plugin.getServer().getScheduler().runTask(plugin, () -> apply(tile, text));
+                            plugin.getServer().getScheduler().runTask(plugin, () -> apply(tile, texts));
                         }
                     });
         }
@@ -152,49 +162,62 @@ final class PlayerLodView {
         return tile;
     }
 
-    private Component encode(TileKey tile, double playerX, double playerZ, double inner) {
+    private TileTexts encode(TileKey tile, double playerX, double playerZ, double inner) {
         int cellBlocks = tile.cellBlocks();
+        int gridSize = TileKey.CELLS + 1;
         double innerSquared = inner * inner;
-        LodCell[] cells = new LodCell[TileKey.CELLS * TileKey.CELLS];
-        for (int row = 0; row < TileKey.CELLS; row++) {
-            for (int column = 0; column < TileKey.CELLS; column++) {
+        LodCell[] grid = new LodCell[gridSize * gridSize];
+        for (int row = 0; row < gridSize; row++) {
+            for (int column = 0; column < gridSize; column++) {
                 int cellX = tile.originX() + column * cellBlocks;
                 int cellZ = tile.originZ() + row * cellBlocks;
                 double dx = cellX + cellBlocks / 2.0 - playerX;
                 double dz = cellZ + cellBlocks / 2.0 - playerZ;
                 if (dx * dx + dz * dz >= innerSquared) {
-                    cells[row * TileKey.CELLS + column] = cache.sample(cellX, cellZ, cellBlocks);
+                    grid[row * gridSize + column] = cache.sample(cellX, cellZ, cellBlocks);
                 }
             }
         }
-        return TileText.encode(cells, TileKey.CELLS);
+        return new TileTexts(
+                TileText.encode(TileGlyphs.tops(grid, TileKey.CELLS), TileKey.CELLS),
+                TileText.encode(TileGlyphs.walls(grid, TileKey.CELLS), TileKey.CELLS)
+        );
     }
 
-    private void apply(TileKey tile, Component text) {
+    private void apply(TileKey tile, TileTexts texts) {
         building.remove(tile);
-        if (text == null || closed || !player.isOnline() || !desired.contains(tile)) {
+        if (texts == null || closed || !player.isOnline() || !desired.contains(tile)) {
             return;
         }
-        TextDisplay display = displays.get(tile);
-        if (display != null && display.isValid()) {
-            display.text(text);
+        TileEntities entities = displays.get(tile);
+        if (entities != null && entities.isValid()) {
+            entities.top().text(texts.top());
+            entities.walls().text(texts.walls());
             return;
         }
-        display = TileDisplays.spawn(anchor, tile.level(), TileKey.CELLS, transformation(tile), text);
-        player.showEntity(plugin, display);
-        displays.put(tile, display);
+        entities = new TileEntities(
+                TileDisplays.spawn(anchor, LodBits.opacity(LodBits.KIND_TOP, tile.level()), TileKey.CELLS, topTransformation(tile), texts.top()),
+                TileDisplays.spawn(anchor, LodBits.opacity(LodBits.KIND_WALL, tile.level()), TileKey.CELLS, wallTransformation(tile), texts.walls())
+        );
+        entities.displays().forEach(display -> player.showEntity(plugin, display));
+        displays.put(tile, entities);
     }
 
     private void reanchor(Location location) {
         anchor = new Location(world, location.getBlockX() + 0.5, world.getMaxHeight(), location.getBlockZ() + 0.5);
-        displays.forEach((tile, display) -> {
-            display.teleport(anchor);
-            display.setTransformation(transformation(tile));
+        displays.forEach((tile, entities) -> {
+            entities.displays().forEach(display -> display.teleport(anchor));
+            entities.top().setTransformation(topTransformation(tile));
+            entities.walls().setTransformation(wallTransformation(tile));
         });
     }
 
-    private Transformation transformation(TileKey tile) {
-        return TileTransform.of(tile.level(), TileKey.CELLS, tile.originX(), tile.originZ(), anchor, cache.minY());
+    private Transformation topTransformation(TileKey tile) {
+        return TileTransform.of(tile.level(), TileKey.CELLS, TileKey.CELLS, tile.originX(), tile.originZ(), anchor, cache.minY());
+    }
+
+    private Transformation wallTransformation(TileKey tile) {
+        return TileTransform.of(tile.level(), TileKey.CELLS, 2 * TileKey.CELLS, tile.originX(), tile.originZ(), anchor, cache.minY());
     }
 
     private static double horizontalDistance(Location a, Location b) {

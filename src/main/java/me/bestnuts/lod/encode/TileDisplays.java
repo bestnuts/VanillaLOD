@@ -16,7 +16,7 @@ public final class TileDisplays {
     private TileDisplays() {
     }
 
-    public static TextDisplay spawn(Location anchor, int level, int size, Transformation transformation, Component text) {
+    public static TextDisplay spawn(Location anchor, byte opacity, int columns, Transformation transformation, Component text) {
         return anchor.getWorld().spawn(anchor, TextDisplay.class, display -> {
             display.setPersistent(false);
             display.setVisibleByDefault(false);
@@ -29,8 +29,8 @@ public final class TileDisplays {
             display.setSeeThrough(false);
             display.setDefaultBackground(false);
             display.setBackgroundColor(Color.fromARGB(0));
-            display.setLineWidth(TileText.lineWidth(size));
-            display.setTextOpacity(LodBits.opacity(level));
+            display.setLineWidth(TileText.lineWidth(columns));
+            display.setTextOpacity(opacity);
             display.setTransformation(transformation);
             display.text(text);
         });

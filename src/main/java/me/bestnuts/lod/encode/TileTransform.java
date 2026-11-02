@@ -20,13 +20,13 @@ public final class TileTransform {
     private TileTransform() {
     }
 
-    public static Transformation of(int level, int size, double originX, double originZ, Location anchor, int floorY) {
+    public static Transformation of(int level, int columns, int rows, double originX, double originZ, Location anchor, int floorY) {
         float cell = LodBits.cellBlocks(level);
         float scaleX = cell / (TileText.GLYPH_ADVANCE * TEXT_UNIT);
         float scaleZ = cell / (LINE_PITCH * TEXT_UNIT);
 
-        double firstGlyphX = cell * (1.0 - TileText.GLYPH_ADVANCE * size / 2.0) / TileText.GLYPH_ADVANCE;
-        double firstRowZ = -cell * size;
+        double firstGlyphX = cell * (1.0 - TileText.GLYPH_ADVANCE * columns / 2.0) / TileText.GLYPH_ADVANCE;
+        double firstRowZ = -cell * rows;
 
         Vector3f translation = new Vector3f(
                 (float) (originX - anchor.getX() - firstGlyphX),

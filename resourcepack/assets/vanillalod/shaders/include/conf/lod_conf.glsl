@@ -5,15 +5,33 @@
 const float lodMarkerOffset = 4096.0f;
 const float lodDetectY = -2048.0f;
 
-const int lodHeightShift = 15;
-const int lodHeightMask = 0x1FF;
-const int lodTintedBit = 1 << 14;
-const int lodPayloadMask = 0x3FFF;
 const int lodLevelMask = 0x7;
+const int lodKindShift = 3;
+const int lodKindMask = 0x3;
+const int lodKindTop = 0;
+const int lodKindWall = 1;
 const int lodEmptyCell = 0xFFFFFF;
 
+const int lodHeightShift = 15;
+const int lodHeightMask = 0x1FF;
+
+const int lodTintedBit = 1 << 14;
+const int lodPayloadMask = 0x3FFF;
+
+const int lodDepthShift = 8;
+const int lodDepthMask = 0x7F;
+const int lodWallZAxisBit = 1 << 7;
+const int lodWallPositiveBit = 1 << 6;
+const int lodWallTintMask = 0x3F;
+
+// A wall display stacks the x edge rows first, then the z edge rows, each one tile tall.
+const float lodTileCells = 16.0f;
+
 // Sprite glyphs are 8 units tall on a 10 unit text display line pitch.
-const float lodRowGap = 0.2f;
+const float lodGlyphDepth = 0.8f;
+
+const float lodWallXShade = 0.6f;
+const float lodWallZShade = 0.8f;
 
 // LOD cells sit beyond the vanilla render distance, up to the 4x far plane.
 const float lodFogStartScale = 3.0f;

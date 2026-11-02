@@ -8,6 +8,9 @@ import net.kyori.adventure.text.object.ObjectContents;
 
 public final class TileText {
 
+    public record Glyph(Key sprite, int packed) {
+    }
+
     public static final int GLYPH_ADVANCE = 8;
 
     private static final Key BLOCK_ATLAS = Key.key("minecraft", "blocks");
@@ -16,28 +19,20 @@ public final class TileText {
     private TileText() {
     }
 
-    public static Component encode(LodCell[] cells, int size) {
+    public static Component encode(Glyph[] glyphs, int columns) {
         TextComponent.Builder text = Component.text();
-        for (int row = 0; row < size; row++) {
-            if (row > 0) {
+        for (int i = 0; i < glyphs.length; i++) {
+            if (i > 0 && i % columns == 0) {
                 text.append(Component.newline());
             }
-            for (int column = 0; column < size; column++) {
-                text.append(glyph(cells[row * size + column]));
-            }
+            Glyph glyph = glyphs[i];
+            text.append(glyph == null ? sprite(EMPTY_SPRITE, LodBits.EMPTY_CELL) : sprite(glyph.sprite(), glyph.packed()));
         }
         return text.build();
     }
 
-    public static int lineWidth(int size) {
-        return size * GLYPH_ADVANCE;
-    }
-
-    private static Component glyph(LodCell cell) {
-        if (cell == null) {
-            return sprite(EMPTY_SPRITE, LodBits.EMPTY_CELL);
-        }
-        return sprite(cell.sprite(), LodBits.cell(cell.height(), cell.tint()));
+    public static int lineWidth(int columns) {
+        return columns * GLYPH_ADVANCE;
     }
 
     private static Component sprite(Key sprite, int packed) {
