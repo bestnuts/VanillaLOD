@@ -14,7 +14,8 @@ public final class TileText {
     public static final int GLYPH_ADVANCE = 8;
 
     private static final Key BLOCK_ATLAS = Key.key("minecraft", "blocks");
-    private static final Key EMPTY_SPRITE = Key.key("minecraft", "block/stone");
+    // Two default font spaces keep the 8 unit sprite advance without emitting any quad.
+    private static final Component EMPTY = Component.text("  ");
 
     private TileText() {
     }
@@ -26,7 +27,7 @@ public final class TileText {
                 text.append(Component.newline());
             }
             Glyph glyph = glyphs[i];
-            text.append(glyph == null ? sprite(EMPTY_SPRITE, LodBits.EMPTY_CELL) : sprite(glyph.sprite(), glyph.packed()));
+            text.append(glyph == null ? EMPTY : sprite(glyph.sprite(), glyph.packed()));
         }
         return text.build();
     }
