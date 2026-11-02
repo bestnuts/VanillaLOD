@@ -2,3 +2,6 @@ name: VanillaLOD
 version: '${version}'
 main: me.bestnuts.lod.VanillaLodPlugin
 api-version: '26.3'
+permissions:
+  vanillalod.command:
+    default: op
