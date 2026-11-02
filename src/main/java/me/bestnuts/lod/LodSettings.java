@@ -16,7 +16,7 @@ public record LodSettings(
 
     public static LodSettings from(ConfigurationSection config) {
         return new LodSettings(
-                config.getDouble("detail", 4.0),
+                config.getDouble("detail", 2.0),
                 config.getInt("min-level", 0),
                 config.getInt("max-level", 6),
                 config.getInt("max-distance", 1024),

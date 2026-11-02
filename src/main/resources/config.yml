@@ -1,5 +1,5 @@
 # 타일을 더 작은 레벨로 나누는 거리 배수. 타일 한 변 x detail 보다 가까우면 분할한다.
-detail: 4.0
+detail: 2.0
 # 셀 한 변 = 2^level 블록. 최대 7.
 min-level: 0
 max-level: 6
