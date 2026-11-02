@@ -33,6 +33,7 @@ final class PlayerLodView {
 
     private static final int FAR_PLANE_SCALE = 4;
     private static final int FAR_PLANE_MARGIN = 16;
+    private static final double REANCHOR_FRACTION = 0.75;
 
     private final Plugin plugin;
     private final Player player;
@@ -74,7 +75,7 @@ final class PlayerLodView {
             return true;
         });
 
-        if (anchor == null || horizontalDistance(location, anchor) > settings.anchorStep()) {
+        if (anchor == null || horizontalDistance(location, anchor) > anchorGrid() * REANCHOR_FRACTION) {
             reanchor(location);
         }
 
@@ -203,8 +204,12 @@ final class PlayerLodView {
         displays.put(tile, entities);
     }
 
+    // Anchor moves stay multiples of every cell size, so a frame that sees the new position with the old translation keeps its glyph corners.
     private void reanchor(Location location) {
-        anchor = new Location(world, location.getBlockX() + 0.5, world.getMaxHeight(), location.getBlockZ() + 0.5);
+        int grid = anchorGrid();
+        double x = Math.floorDiv(location.getBlockX(), grid) * grid + grid / 2.0;
+        double z = Math.floorDiv(location.getBlockZ(), grid) * grid + grid / 2.0;
+        anchor = new Location(world, x, world.getMaxHeight(), z);
         displays.forEach((tile, entities) -> {
             entities.displays().forEach(display -> display.teleport(anchor));
             entities.top().setTransformation(topTransformation(tile));
@@ -218,6 +223,11 @@ final class PlayerLodView {
 
     private Transformation wallTransformation(TileKey tile) {
         return TileTransform.of(tile.level(), TileKey.CELLS, 2 * TileKey.CELLS, tile.originX(), tile.originZ(), anchor, cache.minY());
+    }
+
+    private int anchorGrid() {
+        int largestCell = LodBits.cellBlocks(settings.maxLevel());
+        return Math.max(largestCell, Math.ceilDiv(settings.anchorGrid(), largestCell) * largestCell);
     }
 
     private static double horizontalDistance(Location a, Location b) {
