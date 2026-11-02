@@ -56,8 +56,8 @@ public final class LodWorldCache {
 
     public LodCell sample(int blockX, int blockZ, int cellBlocks) {
         int stride = Math.max(1, cellBlocks / MAX_SAMPLES_PER_AXIS);
-        int maxTopY = Integer.MIN_VALUE;
         Map<Integer, Integer> spriteVotes = new HashMap<>();
+        Map<Integer, Integer> spriteTopY = new HashMap<>();
         Map<Integer, Integer> spriteTints = new HashMap<>();
 
         for (int dz = 0; dz < cellBlocks; dz += stride) {
@@ -71,8 +71,8 @@ public final class LodWorldCache {
                 int localX = x & 15;
                 int localZ = z & 15;
                 int sprite = columns.sprite(localX, localZ);
-                maxTopY = Math.max(maxTopY, columns.topY(localX, localZ));
                 spriteVotes.merge(sprite, 1, Integer::sum);
+                spriteTopY.merge(sprite, columns.topY(localX, localZ), Math::max);
                 spriteTints.putIfAbsent(sprite, columns.tint(localX, localZ));
             }
         }
@@ -81,7 +81,7 @@ public final class LodWorldCache {
             return null;
         }
         int sprite = spriteVotes.entrySet().stream().max(Map.Entry.comparingByValue()).orElseThrow().getKey();
-        return new LodCell(palette.sprite(sprite), maxTopY + 1 - minY, spriteTints.getOrDefault(sprite, LodBits.NO_TINT));
+        return new LodCell(palette.sprite(sprite), spriteTopY.get(sprite) + 1 - minY, spriteTints.getOrDefault(sprite, LodBits.NO_TINT));
     }
 
     public void load() throws IOException {
