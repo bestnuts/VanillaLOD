@@ -11,6 +11,9 @@ public final class BiomeTints {
     }
 
     private static final int DEFAULT_WATER = 0x3F76E4;
+    // LOD water is an opaque surface with no sea bed behind it; mixing in a muted bed tone approximates translucent water from afar.
+    private static final int WATER_BED = 0x8C9AA0;
+    private static final double WATER_BED_WEIGHT = 0.35;
     private static final Colors DEFAULT = new Colors(0x91BD59, 0x77AB2F, DEFAULT_WATER);
     private static final Colors SNOWY = new Colors(0x80B497, 0x60A17B, 0x3D57D6);
     private static final Colors ARID = new Colors(0xBFB755, 0xAEA42A, DEFAULT_WATER);
@@ -49,9 +52,16 @@ public final class BiomeTints {
             case NONE -> LodBits.NO_TINT;
             case GRASS -> colors.grass;
             case FOLIAGE -> colors.foliage;
-            case WATER -> colors.water;
+            case WATER -> blend(colors.water, WATER_BED, WATER_BED_WEIGHT);
             case FIXED -> material.fixedColor();
         };
+    }
+
+    private static int blend(int from, int to, double weight) {
+        int red = (int) Math.round((from >> 16 & 0xFF) * (1 - weight) + (to >> 16 & 0xFF) * weight);
+        int green = (int) Math.round((from >> 8 & 0xFF) * (1 - weight) + (to >> 8 & 0xFF) * weight);
+        int blue = (int) Math.round((from & 0xFF) * (1 - weight) + (to & 0xFF) * weight);
+        return red << 16 | green << 8 | blue;
     }
 
     private static void put(Colors colors, String... biomes) {
