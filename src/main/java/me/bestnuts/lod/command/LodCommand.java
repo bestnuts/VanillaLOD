@@ -32,12 +32,13 @@ public final class LodCommand implements BasicCommand {
     @Override
     public void execute(CommandSourceStack source, String[] args) {
         if (args.length == 0) {
-            source.getSender().sendMessage(Component.text("/lod toggle | /lod pregen <radius chunks> | /lod save"));
+            source.getSender().sendMessage(Component.text("/lod toggle | /lod pregen <radius chunks> | /lod save | /lod probe"));
             return;
         }
         switch (args[0]) {
             case "toggle" -> toggle(source);
             case "pregen" -> pregen(source, args);
+            case "probe" -> probe(source);
             case "save" -> {
                 cache.saveAll();
                 source.getSender().sendMessage(Component.text("LOD cache saved"));
@@ -48,7 +49,7 @@ public final class LodCommand implements BasicCommand {
 
     @Override
     public Collection<String> suggest(CommandSourceStack source, String[] args) {
-        return args.length <= 1 ? List.of("toggle", "pregen", "save") : List.of();
+        return args.length <= 1 ? List.of("toggle", "pregen", "save", "probe") : List.of();
     }
 
     @Override
@@ -63,6 +64,14 @@ public final class LodCommand implements BasicCommand {
         }
         boolean enabled = views.toggle(player);
         player.sendMessage(Component.text("LOD " + (enabled ? "on" : "off")));
+    }
+
+    private void probe(CommandSourceStack source) {
+        if (source.getSender() instanceof Player player) {
+            LodProbe.spawn(plugin, player);
+        } else {
+            source.getSender().sendMessage(Component.text("Players only"));
+        }
     }
 
     private void pregen(CommandSourceStack source, String[] args) {
