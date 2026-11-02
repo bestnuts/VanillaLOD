@@ -3,6 +3,7 @@ package me.bestnuts.lod;
 import io.papermc.paper.plugin.lifecycle.event.types.LifecycleEvents;
 import me.bestnuts.lod.cache.ChunkCaptureListener;
 import me.bestnuts.lod.cache.LodCache;
+import me.bestnuts.lod.cache.SurfaceChangeTracker;
 import me.bestnuts.lod.command.LodCommand;
 import me.bestnuts.lod.view.LodViewService;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -25,6 +26,9 @@ public final class VanillaLodPlugin extends JavaPlugin {
         cache.addListener(views);
 
         getServer().getPluginManager().registerEvents(new ChunkCaptureListener(cache), this);
+        SurfaceChangeTracker changes = new SurfaceChangeTracker(cache);
+        getServer().getPluginManager().registerEvents(changes, this);
+        changes.start(this);
         getServer().getPluginManager().registerEvents(views, this);
         getLifecycleManager().registerEventHandler(LifecycleEvents.COMMANDS,
                 event -> event.registrar().register("lod", new LodCommand(this, cache, views, settings)));
