@@ -4,7 +4,7 @@
 #if !defined(IS_GUI) && !defined(IS_SEE_THROUGH)
 #include <minecraft:fog.glsl>
 #include <minecraft:sample_lightmap.glsl>
-#include <vanillalod:lod.glsl>
+#include <vanillalod:lib/cell_lib.glsl>
 #endif
 
 #include <minecraft:dynamictransforms.glsl>
@@ -21,40 +21,40 @@ layout(location = 3) in ivec2 UV2;
 uniform sampler2D Sampler2;
 layout(location = 0) out float sphericalVertexDistance;
 layout(location = 1) out float cylindricalVertexDistance;
-layout(location = 4) out vec2 lodQuad;
-layout(location = 5) flat out float lodCellBlocks;
+layout(location = 4) out vec2 ls_cellQuad;
+layout(location = 5) flat out float cellBlockSize;
 #endif
 
 layout(location = 2) out vec4 vertexColor;
 layout(location = 3) out vec2 texCoord0;
 
 void main() {
-    vec3 position = Position;
+    vec3 ws_position = Position;
 
 #if !defined(IS_GUI) && !defined(IS_SEE_THROUGH)
-    lodQuad = vec2(0.0);
-    lodCellBlocks = 0.0;
+    ls_cellQuad = vec2(0.0f);
+    cellBlockSize = 0.0f;
     vec4 color = Color;
 
-    if (lod_is_cell(Position)) {
-        int packed = lod_packed(Color);
-        float cellBlocks = lod_cell_blocks(Color);
-        vec2 corner = lod_corner(gl_VertexID);
+    if (cellIsMarked(Position)) {
+        int packed = cellPacked(Color);
+        float blocks = cellBlocks(Color);
+        vec2 corner = cellCorner(gl_VertexID);
 
-        position.y += LOD_MARKER_OFFSET + lod_height(packed);
-        position.z += corner.y * LOD_ROW_GAP * cellBlocks;
+        ws_position.y += lodMarkerOffset + cellHeight(packed);
+        ws_position.z += corner.y * lodRowGap * blocks;
 
-        lodQuad = corner;
-        lodCellBlocks = cellBlocks;
-        color = vec4(lod_tint(packed), 1.0);
+        ls_cellQuad = corner;
+        cellBlockSize = blocks;
+        color = vec4(cellTint(packed), 1.0f);
     }
 
-    gl_Position = ProjMat * ModelViewMat * vec4(position, 1.0);
-    sphericalVertexDistance = fog_spherical_distance(position);
-    cylindricalVertexDistance = fog_cylindrical_distance(position);
+    gl_Position = ProjMat * ModelViewMat * vec4(ws_position, 1.0f);
+    sphericalVertexDistance = fog_spherical_distance(ws_position);
+    cylindricalVertexDistance = fog_cylindrical_distance(ws_position);
     vertexColor = color * sample_lightmap(Sampler2, UV2);
 #else
-    gl_Position = ProjMat * ModelViewMat * vec4(position, 1.0);
+    gl_Position = ProjMat * ModelViewMat * vec4(ws_position, 1.0f);
     vertexColor = Color;
 #endif
     texCoord0 = UV0;
