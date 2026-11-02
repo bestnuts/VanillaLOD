@@ -23,7 +23,7 @@ import me.bestnuts.lod.encode.LodCell;
 public final class LodWorldCache {
 
     private static final int REGION_SHIFT = 5;
-    private static final int FORMAT_VERSION = 1;
+    private static final int FORMAT_VERSION = 2;
     private static final int MAX_SAMPLES_PER_AXIS = 4;
 
     private final Path directory;

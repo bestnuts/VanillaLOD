@@ -1,7 +1,10 @@
 package me.bestnuts.lod.cache;
 
 import java.util.EnumMap;
+import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import me.bestnuts.lod.encode.SpriteNames;
 import net.kyori.adventure.key.Key;
 import org.bukkit.Material;
 
@@ -10,6 +13,12 @@ public record SurfaceMaterial(Key sprite, Tint tint, int fixedColor) {
     public enum Tint { NONE, GRASS, FOLIAGE, WATER, FIXED }
 
     private static final Map<Material, SurfaceMaterial> OVERRIDES = new EnumMap<>(Material.class);
+    private static final Map<Material, SurfaceMaterial> RESOLVED = new ConcurrentHashMap<>();
+    private static final Key MAP_COLOR_SPRITE = SpriteNames.sprite("white_concrete");
+    private static final int UNKNOWN_MAP_COLOR = 0x808080;
+    private static final List<String> SHAPE_SUFFIXES = List.of(
+            "_stairs", "_slab", "_wall", "_fence_gate", "_fence", "_pressure_plate", "_button", "_carpet", "_trapdoor", "_door"
+    );
 
     static {
         override(Material.GRASS_BLOCK, "grass_block_top", Tint.GRASS);
@@ -41,17 +50,7 @@ public record SurfaceMaterial(Key sprite, Tint tint, int fixedColor) {
 
     public static SurfaceMaterial of(Material material) {
         SurfaceMaterial override = OVERRIDES.get(material);
-        if (override != null) {
-            return override;
-        }
-        String name = material.getKey().value();
-        if (name.endsWith("_leaves")) {
-            return new SurfaceMaterial(sprite(name), Tint.FOLIAGE, 0);
-        }
-        if (name.endsWith("_log") || name.endsWith("_stem")) {
-            return new SurfaceMaterial(sprite(name + "_top"), Tint.NONE, 0);
-        }
-        return new SurfaceMaterial(sprite(name), Tint.NONE, 0);
+        return override != null ? override : RESOLVED.computeIfAbsent(material, SurfaceMaterial::resolve);
     }
 
     public static boolean isSurface(Material material) {
@@ -66,7 +65,33 @@ public record SurfaceMaterial(Key sprite, Tint tint, int fixedColor) {
         OVERRIDES.put(material, new SurfaceMaterial(sprite(sprite), Tint.FIXED, fixedColor));
     }
 
+    private static SurfaceMaterial resolve(Material material) {
+        String name = material.getKey().value();
+        String base = withoutShapeSuffix(name);
+        Tint tint = name.endsWith("_leaves") ? Tint.FOLIAGE : Tint.NONE;
+        return SpriteNames.find(name + "_top", name, base + "_top", base, base + "s", base + "_planks", base + "_block")
+                .map(sprite -> new SurfaceMaterial(sprite, tint, 0))
+                .orElseGet(() -> new SurfaceMaterial(MAP_COLOR_SPRITE, Tint.FIXED, mapColor(material)));
+    }
+
+    private static String withoutShapeSuffix(String name) {
+        for (String suffix : SHAPE_SUFFIXES) {
+            if (name.endsWith(suffix)) {
+                return name.substring(0, name.length() - suffix.length());
+            }
+        }
+        return name;
+    }
+
+    private static int mapColor(Material material) {
+        try {
+            return material.createBlockData().getMapColor().asRGB();
+        } catch (RuntimeException e) {
+            return UNKNOWN_MAP_COLOR;
+        }
+    }
+
     private static Key sprite(String name) {
-        return Key.key("minecraft", "block/" + name);
+        return SpriteNames.sprite(name);
     }
 }

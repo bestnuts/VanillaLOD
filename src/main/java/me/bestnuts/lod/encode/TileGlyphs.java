@@ -12,6 +12,7 @@ public final class TileGlyphs {
     private static final Key DIRT = Key.key("minecraft", "block/dirt");
     private static final Set<String> DIRT_SIDED = Set.of("block/grass_block_top", "block/podzol_top", "block/mycelium_top", "block/dirt_path_top");
     private static final String TOP_SUFFIX = "_top";
+    private static final String BLOCK_PREFIX = "block/";
 
     private TileGlyphs() {
     }
@@ -53,9 +54,11 @@ public final class TileGlyphs {
         if (DIRT_SIDED.contains(sprite)) {
             return new TileText.Glyph(DIRT, LodBits.wall(upper.height(), depth, zAxis, facesPositive, LodBits.NO_TINT));
         }
-        Key side = sprite.endsWith(TOP_SUFFIX)
-                ? Key.key(upper.sprite().namespace(), sprite.substring(0, sprite.length() - TOP_SUFFIX.length()))
-                : upper.sprite();
+        Key side = upper.sprite();
+        if (sprite.endsWith(TOP_SUFFIX)) {
+            String base = sprite.substring(BLOCK_PREFIX.length(), sprite.length() - TOP_SUFFIX.length());
+            side = SpriteNames.find(base, base + "_side").orElse(upper.sprite());
+        }
         return new TileText.Glyph(side, LodBits.wall(upper.height(), depth, zAxis, facesPositive, upper.tint()));
     }
 }
