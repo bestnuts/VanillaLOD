@@ -77,10 +77,9 @@ final class PlayerLodView {
             reanchor(location);
         }
 
-        int renderDistance = Math.min(player.getSendViewDistance(), player.getClientViewDistance());
-        double inner = renderDistance * 16.0;
-        double outer = Math.min(settings.maxDistance(), inner * LodBits.FOG_END_SCALE);
-        desired = TileSelector.select(location.getX(), location.getZ(), inner, outer, settings);
+        LodRange range = LodRange.of(player, settings);
+        double inner = range.inner();
+        desired = TileSelector.select(location.getX(), location.getZ(), inner, range.outer(), settings);
 
         Iterator<Map.Entry<TileKey, TileEntities>> iterator = displays.entrySet().iterator();
         while (iterator.hasNext()) {
