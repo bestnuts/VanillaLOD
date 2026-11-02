@@ -21,8 +21,8 @@ target/
 *.log
 hs_err_pid*
 
-# 테스트 서버
-deploy/
+# 테스트 서버 실행 디렉토리
+runtime/
 
 # 리소스팩 배포 산출물
 *.zip
