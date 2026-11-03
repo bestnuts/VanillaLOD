@@ -192,7 +192,8 @@ final class PlayerLodView {
                 double dx = cellX + cellBlocks / 2.0 - playerX;
                 double dz = cellZ + cellBlocks / 2.0 - playerZ;
                 if (dx * dx + dz * dz >= innerSquared) {
-                    grid[row * gridSize + column] = cache.sample(cellX, cellZ, cellBlocks);
+                    LodCell cell = cache.sample(cellX, cellZ, cellBlocks);
+                    grid[row * gridSize + column] = cell == null ? null : cell.quantized(cellBlocks);
                 }
             }
         }
