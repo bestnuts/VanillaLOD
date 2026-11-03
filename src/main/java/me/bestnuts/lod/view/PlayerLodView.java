@@ -23,12 +23,13 @@ import net.kyori.adventure.text.Component;
 import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.entity.Player;
+import org.bukkit.entity.TextDisplay;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.util.Transformation;
 
 final class PlayerLodView {
 
-    private record TileTexts(Component top, Component walls) {
+    private record TileTexts(Component top, Component walls, int topGlyphs, int wallGlyphs) {
     }
 
     private static final double REANCHOR_FRACTION = 0.75;
@@ -176,10 +177,26 @@ final class PlayerLodView {
                 }
             }
         }
+        TileText.Glyph[] tops = TileGlyphs.tops(grid, TileKey.CELLS);
+        TileText.Glyph[] walls = TileGlyphs.walls(grid, TileKey.CELLS, cellBlocks);
+        int topGlyphs = glyphCount(tops);
+        int wallGlyphs = glyphCount(walls);
         return new TileTexts(
-                TileText.encode(TileGlyphs.tops(grid, TileKey.CELLS), TileKey.CELLS),
-                TileText.encode(TileGlyphs.walls(grid, TileKey.CELLS, cellBlocks), TileGlyphs.wallColumns(TileKey.CELLS))
+                topGlyphs == 0 ? null : TileText.encode(tops, TileKey.CELLS),
+                wallGlyphs == 0 ? null : TileText.encode(walls, TileGlyphs.wallColumns(TileKey.CELLS)),
+                topGlyphs,
+                wallGlyphs
         );
+    }
+
+    private static int glyphCount(TileText.Glyph[] glyphs) {
+        int count = 0;
+        for (TileText.Glyph glyph : glyphs) {
+            if (glyph != null) {
+                count++;
+            }
+        }
+        return count;
     }
 
     private void apply(TileKey tile, TileTexts texts) {
@@ -187,18 +204,28 @@ final class PlayerLodView {
         if (texts == null || closed || !player.isOnline() || !desired.contains(tile)) {
             return;
         }
-        TileEntities entities = displays.get(tile);
-        if (entities != null && entities.isValid()) {
-            entities.top().text(texts.top());
-            entities.walls().text(texts.walls());
-            return;
+        TileEntities previous = displays.get(tile);
+        TextDisplay top = layer(previous == null ? null : previous.top(), texts.top(),
+                LodBits.opacity(LodBits.KIND_TOP, tile.level()), TileKey.CELLS, topTransformation(tile));
+        TextDisplay walls = layer(previous == null ? null : previous.walls(), texts.walls(),
+                LodBits.opacity(LodBits.KIND_WALL, tile.level()), TileGlyphs.wallColumns(TileKey.CELLS), wallTransformation(tile));
+        displays.put(tile, new TileEntities(top, walls, texts.topGlyphs(), texts.wallGlyphs()));
+    }
+
+    private TextDisplay layer(TextDisplay current, Component text, byte opacity, int columns, Transformation transformation) {
+        if (text == null) {
+            if (current != null) {
+                current.remove();
+            }
+            return null;
         }
-        entities = new TileEntities(
-                TileDisplays.spawn(anchor, LodBits.opacity(LodBits.KIND_TOP, tile.level()), TileKey.CELLS, topTransformation(tile), texts.top()),
-                TileDisplays.spawn(anchor, LodBits.opacity(LodBits.KIND_WALL, tile.level()), TileGlyphs.wallColumns(TileKey.CELLS), wallTransformation(tile), texts.walls())
-        );
-        entities.displays().forEach(display -> player.showEntity(plugin, display));
-        displays.put(tile, entities);
+        if (current != null && current.isValid()) {
+            current.text(text);
+            return current;
+        }
+        TextDisplay display = TileDisplays.spawn(anchor, opacity, columns, transformation, text);
+        player.showEntity(plugin, display);
+        return display;
     }
 
     // Anchor moves stay multiples of every cell size, so a frame that sees the new position with the old translation keeps its glyph corners.
@@ -209,8 +236,12 @@ final class PlayerLodView {
         anchor = new Location(world, x, world.getMaxHeight(), z);
         displays.forEach((tile, entities) -> {
             entities.displays().forEach(display -> display.teleport(anchor));
-            entities.top().setTransformation(topTransformation(tile));
-            entities.walls().setTransformation(wallTransformation(tile));
+            if (entities.top() != null) {
+                entities.top().setTransformation(topTransformation(tile));
+            }
+            if (entities.walls() != null) {
+                entities.walls().setTransformation(wallTransformation(tile));
+            }
         });
     }
 

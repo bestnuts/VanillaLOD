@@ -1,20 +1,23 @@
 package me.bestnuts.lod.view;
 
 import java.util.List;
+import java.util.stream.Stream;
 import org.bukkit.entity.TextDisplay;
 
-record TileEntities(TextDisplay top, TextDisplay walls) {
+/**
+ * Displays of one tile; a layer without any glyph has no display at all.
+ */
+record TileEntities(TextDisplay top, TextDisplay walls, int topGlyphs, int wallGlyphs) {
 
     List<TextDisplay> displays() {
-        return List.of(top, walls);
+        return Stream.of(top, walls).filter(display -> display != null).toList();
     }
 
     boolean isValid() {
-        return top.isValid() && walls.isValid();
+        return displays().stream().allMatch(TextDisplay::isValid);
     }
 
     void remove() {
-        top.remove();
-        walls.remove();
+        displays().forEach(TextDisplay::remove);
     }
 }
