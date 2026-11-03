@@ -23,7 +23,7 @@ import me.bestnuts.lod.encode.LodCell;
 public final class LodWorldCache {
 
     private static final int REGION_SHIFT = 5;
-    private static final int FORMAT_VERSION = 4;
+    private static final int FORMAT_VERSION = 5;
     private static final int MAX_SAMPLES_PER_AXIS = 4;
 
     private final Path directory;
@@ -64,6 +64,7 @@ public final class LodWorldCache {
         Map<Integer, Integer> spriteVotes = new HashMap<>();
         Map<Integer, Integer> spriteTopY = new HashMap<>();
         Map<Integer, Integer> spriteTints = new HashMap<>();
+        Map<Integer, Integer> spriteBottomY = new HashMap<>();
 
         for (int dz = 0; dz < cellBlocks; dz += stride) {
             for (int dx = 0; dx < cellBlocks; dx += stride) {
@@ -82,6 +83,7 @@ public final class LodWorldCache {
                 spriteVotes.merge(sprite, 1, Integer::sum);
                 spriteTopY.merge(sprite, columns.topY(localX, localZ), Math::max);
                 spriteTints.putIfAbsent(sprite, columns.tint(localX, localZ));
+                spriteBottomY.merge(sprite, columns.bottomY(localX, localZ), Math::min);
             }
         }
 
@@ -89,7 +91,13 @@ public final class LodWorldCache {
             return null;
         }
         int sprite = spriteVotes.entrySet().stream().max(Map.Entry.comparingByValue()).orElseThrow().getKey();
-        return new LodCell(palette.sprite(sprite), spriteTopY.get(sprite) + 1 - minY, spriteTints.getOrDefault(sprite, LodBits.NO_TINT));
+        int bottomY = spriteBottomY.get(sprite);
+        return new LodCell(
+                palette.sprite(sprite),
+                spriteTopY.get(sprite) + 1 - minY,
+                spriteTints.getOrDefault(sprite, LodBits.NO_TINT),
+                bottomY == ChunkColumns.GROUNDED ? LodCell.GROUNDED : bottomY - minY
+        );
     }
 
     public void load() throws IOException {

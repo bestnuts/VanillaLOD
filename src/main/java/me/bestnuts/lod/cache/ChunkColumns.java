@@ -9,20 +9,27 @@ public final class ChunkColumns {
     public static final int SIZE = 16;
     public static final int COLUMNS = SIZE * SIZE;
     public static final int NO_SURFACE = -1;
+    public static final int GROUNDED = Short.MIN_VALUE;
 
     private final short[] heights = new short[COLUMNS];
+    private final short[] bottoms = new short[COLUMNS];
     private final short[] sprites = new short[COLUMNS];
     private final int[] tints = new int[COLUMNS];
 
-    public void set(int x, int z, int topY, int sprite, int tint) {
+    public void set(int x, int z, int topY, int bottomY, int sprite, int tint) {
         int index = index(x, z);
         heights[index] = (short) topY;
+        bottoms[index] = (short) bottomY;
         sprites[index] = (short) sprite;
         tints[index] = tint;
     }
 
     public int topY(int x, int z) {
         return heights[index(x, z)];
+    }
+
+    public int bottomY(int x, int z) {
+        return bottoms[index(x, z)];
     }
 
     public int sprite(int x, int z) {
@@ -36,6 +43,7 @@ public final class ChunkColumns {
     public void write(DataOutput out) throws IOException {
         for (int i = 0; i < COLUMNS; i++) {
             out.writeShort(heights[i]);
+            out.writeShort(bottoms[i]);
             out.writeShort(sprites[i]);
             out.writeInt(tints[i]);
         }
@@ -45,6 +53,7 @@ public final class ChunkColumns {
         ChunkColumns columns = new ChunkColumns();
         for (int i = 0; i < COLUMNS; i++) {
             columns.heights[i] = in.readShort();
+            columns.bottoms[i] = in.readShort();
             columns.sprites[i] = in.readShort();
             columns.tints[i] = in.readInt();
         }

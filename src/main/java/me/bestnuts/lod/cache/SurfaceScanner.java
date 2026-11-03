@@ -6,6 +6,8 @@ import org.bukkit.Material;
 
 public final class SurfaceScanner {
 
+    private static final int THICKNESS_SCAN = 64;
+
     private SurfaceScanner() {
     }
 
@@ -22,7 +24,7 @@ public final class SurfaceScanner {
     private static void scanColumn(ChunkSnapshot snapshot, int minY, SpritePalette palette, ChunkColumns columns, int x, int z) {
         int y = snapshot.getHighestBlockYAt(x, z);
         if (y < minY) {
-            columns.set(x, z, minY, ChunkColumns.NO_SURFACE, LodBits.NO_TINT);
+            columns.set(x, z, minY, ChunkColumns.GROUNDED, ChunkColumns.NO_SURFACE, LodBits.NO_TINT);
             return;
         }
         Material material = snapshot.getBlockType(x, y, z);
@@ -32,11 +34,28 @@ public final class SurfaceScanner {
         }
 
         if (!SurfaceMaterial.isSurface(material)) {
-            columns.set(x, z, y, ChunkColumns.NO_SURFACE, LodBits.NO_TINT);
+            columns.set(x, z, y, ChunkColumns.GROUNDED, ChunkColumns.NO_SURFACE, LodBits.NO_TINT);
             return;
         }
         SurfaceMaterial surface = SurfaceMaterial.of(material);
         int tint = BiomeTints.color(surface, snapshot.getBiome(x, y, z));
-        columns.set(x, z, y, palette.id(surface.sprite()), tint);
+        columns.set(x, z, y, bottom(snapshot, minY, x, y, z), palette.id(surface.sprite()), tint);
+    }
+
+    // A column floats only when the solid run under its surface ends within the scan and nothing else lies below it.
+    private static int bottom(ChunkSnapshot snapshot, int minY, int x, int topY, int z) {
+        int bottom = topY;
+        while (bottom > minY && topY - bottom < THICKNESS_SCAN && !snapshot.getBlockType(x, bottom - 1, z).isAir()) {
+            bottom--;
+        }
+        if (bottom == minY || topY - bottom >= THICKNESS_SCAN) {
+            return ChunkColumns.GROUNDED;
+        }
+        for (int below = bottom - 1; below >= minY; below--) {
+            if (!snapshot.getBlockType(x, below, z).isAir()) {
+                return ChunkColumns.GROUNDED;
+            }
+        }
+        return bottom;
     }
 }
