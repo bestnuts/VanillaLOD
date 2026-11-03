@@ -60,7 +60,7 @@ public final class TileGlyphs {
         return glyphs;
     }
 
-    public static TileText.Glyph[] walls(LodCell[] grid, int size, int cellBlocks) {
+    public static TileText.Glyph[] walls(LodCell[] grid, int size, int cellBlocks, WallView view) {
         int columns = wallColumns(size);
         TileText.Glyph[] glyphs = new TileText.Glyph[wallRows(size) * columns];
         for (int edge = 0; edge <= size; edge++) {
@@ -69,6 +69,11 @@ public final class TileGlyphs {
                 glyphs[line * columns + edge] = edgeWall(cell(grid, size, row, edge - 1), cell(grid, size, row, edge), edge, size, false, cellBlocks);
                 int column = line - 1;
                 glyphs[(columns + edge) * columns + line] = edgeWall(cell(grid, size, edge - 1, column), cell(grid, size, edge, column), edge, size, true, cellBlocks);
+            }
+        }
+        for (int i = 0; i < glyphs.length; i++) {
+            if (glyphs[i] != null && !view.shows(i >= columns * columns, LodBits.wallFacesPositive(glyphs[i].packed()))) {
+                glyphs[i] = null;
             }
         }
         for (int edge = 0; edge <= size; edge++) {

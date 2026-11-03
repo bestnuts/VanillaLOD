@@ -7,6 +7,7 @@ import me.bestnuts.lod.encode.TileDisplays;
 import me.bestnuts.lod.encode.TileGlyphs;
 import me.bestnuts.lod.encode.TileText;
 import me.bestnuts.lod.encode.TileTransform;
+import me.bestnuts.lod.encode.WallView;
 import net.kyori.adventure.key.Key;
 import net.kyori.adventure.text.Component;
 import org.bukkit.Location;
@@ -37,7 +38,7 @@ final class LodProbe {
     static void spawn(Plugin plugin, Player player) {
         LodCell[] grid = grid();
         Component tops = TileText.encode(TileGlyphs.tops(grid, SIZE), SIZE);
-        Component walls = TileText.encode(TileGlyphs.walls(grid, SIZE, LodBits.cellBlocks(LEVEL)), TileGlyphs.wallColumns(SIZE));
+        Component walls = TileText.encode(TileGlyphs.walls(grid, SIZE, LodBits.cellBlocks(LEVEL), WallView.ALL), TileGlyphs.wallColumns(SIZE));
         Location feet = player.getLocation();
 
         Location rawAt = feet.clone().add(feet.getDirection().setY(0).normalize().multiply(3));

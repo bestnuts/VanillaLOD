@@ -19,6 +19,7 @@ import me.bestnuts.lod.encode.TileDisplays;
 import me.bestnuts.lod.encode.TileGlyphs;
 import me.bestnuts.lod.encode.TileText;
 import me.bestnuts.lod.encode.TileTransform;
+import me.bestnuts.lod.encode.WallView;
 import net.kyori.adventure.text.Component;
 import org.bukkit.Location;
 import org.bukkit.World;
@@ -29,7 +30,7 @@ import org.bukkit.util.Transformation;
 
 final class PlayerLodView {
 
-    private record TileTexts(Component top, Component walls, int topGlyphs, int wallGlyphs) {
+    private record TileTexts(Component top, Component walls, int topGlyphs, int wallGlyphs, WallView wallView) {
     }
 
     private static final double REANCHOR_FRACTION = 0.75;
@@ -104,6 +105,12 @@ final class PlayerLodView {
                 }
             }
         }
+
+        displays.forEach((tile, entities) -> {
+            if (!wallView(tile, location.getX(), location.getZ()).equals(entities.wallView())) {
+                dirty.add(tile);
+            }
+        });
 
         for (long chunk : cachedChunks) {
             int cx = (int) (chunk >> 32);
@@ -190,15 +197,21 @@ final class PlayerLodView {
             }
         }
         TileText.Glyph[] tops = TileGlyphs.tops(grid, TileKey.CELLS);
-        TileText.Glyph[] walls = TileGlyphs.walls(grid, TileKey.CELLS, cellBlocks);
+        WallView wallView = wallView(tile, playerX, playerZ);
+        TileText.Glyph[] walls = TileGlyphs.walls(grid, TileKey.CELLS, cellBlocks, wallView);
         int topGlyphs = glyphCount(tops);
         int wallGlyphs = glyphCount(walls);
         return new TileTexts(
                 topGlyphs == 0 ? null : TileText.encode(tops, TileKey.CELLS),
                 wallGlyphs == 0 ? null : TileText.encode(walls, TileGlyphs.wallColumns(TileKey.CELLS)),
                 topGlyphs,
-                wallGlyphs
+                wallGlyphs,
+                wallView
         );
+    }
+
+    private static WallView wallView(TileKey tile, double playerX, double playerZ) {
+        return WallView.of(tile.originX(), tile.originZ(), tile.blocks(), playerX, playerZ);
     }
 
     private static int glyphCount(TileText.Glyph[] glyphs) {
@@ -221,7 +234,7 @@ final class PlayerLodView {
                 LodBits.opacity(LodBits.KIND_TOP, tile.level()), TileKey.CELLS, topTransformation(tile));
         TextDisplay walls = layer(previous == null ? null : previous.walls(), texts.walls(),
                 LodBits.opacity(LodBits.KIND_WALL, tile.level()), TileGlyphs.wallColumns(TileKey.CELLS), wallTransformation(tile));
-        displays.put(tile, new TileEntities(top, walls, texts.topGlyphs(), texts.wallGlyphs()));
+        displays.put(tile, new TileEntities(top, walls, texts.topGlyphs(), texts.wallGlyphs(), texts.wallView()));
     }
 
     private TextDisplay layer(TextDisplay current, Component text, byte opacity, int columns, Transformation transformation) {

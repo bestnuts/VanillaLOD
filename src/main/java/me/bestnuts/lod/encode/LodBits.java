@@ -53,6 +53,10 @@ public final class LodBits {
         return packed | (tintRgb == NO_TINT ? WALL_UNTINTED : wallTint(tintRgb));
     }
 
+    public static boolean wallFacesPositive(int packed) {
+        return (packed & WALL_POSITIVE_BIT) != 0;
+    }
+
     public static int withWallRun(int packed, int run) {
         return packed | (Math.clamp(run, 1, MAX_RUN) - 1) << WALL_RUN_SHIFT;
     }
