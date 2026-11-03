@@ -15,6 +15,7 @@ public final class TileGlyphs {
     private static final Set<String> DIRT_SIDED = Set.of("block/grass_block_top", "block/podzol_top", "block/mycelium_top", "block/dirt_path_top");
     private static final String TOP_SUFFIX = "_top";
     private static final String BLOCK_PREFIX = "block/";
+    private static final int SMOOTH_RADIUS = 1;
 
     private TileGlyphs() {
     }
@@ -60,38 +61,44 @@ public final class TileGlyphs {
         return glyphs;
     }
 
+    public static int sampledGridSize(int size) {
+        return gridSize(size) + 2 * SMOOTH_RADIUS;
+    }
+
     // Undersides of floating cells average with their floating neighbours so a rounded island bottom steps gently
-    // instead of alternating between deep and shallow cells.
-    public static LodCell[] smoothUndersides(LodCell[] grid, int size, int cellBlocks) {
+    // instead of alternating between deep and shallow cells. The input carries one more ring than the padded grid,
+    // so a border cell gets the same neighbours, and the same underside, in both tiles that sample it.
+    public static LodCell[] smoothUndersides(LodCell[] sampled, int size, int cellBlocks) {
+        int sampledSize = sampledGridSize(size);
         int gridSize = gridSize(size);
-        LodCell[] smoothed = grid.clone();
+        LodCell[] grid = new LodCell[gridSize * gridSize];
         for (int row = 0; row < gridSize; row++) {
             for (int column = 0; column < gridSize; column++) {
-                LodCell cell = grid[row * gridSize + column];
-                if (!isSolid(cell) || !cell.floating()) {
-                    continue;
-                }
-                long sum = 0;
-                int count = 0;
-                for (int dz = -1; dz <= 1; dz++) {
-                    for (int dx = -1; dx <= 1; dx++) {
-                        int neighbourRow = row + dz;
-                        int neighbourColumn = column + dx;
-                        if (neighbourRow < 0 || neighbourRow >= gridSize || neighbourColumn < 0 || neighbourColumn >= gridSize) {
-                            continue;
-                        }
-                        LodCell neighbour = grid[neighbourRow * gridSize + neighbourColumn];
-                        if (isSolid(neighbour) && neighbour.floating()) {
-                            sum += neighbour.bottom();
-                            count++;
-                        }
-                    }
-                }
-                int bottom = Math.min((int) Math.round((double) sum / count), cell.height() - 1);
-                smoothed[row * gridSize + column] = new LodCell(cell.sprite(), cell.height(), cell.tint(), bottom).quantized(cellBlocks);
+                int sampledRow = row + SMOOTH_RADIUS;
+                int sampledColumn = column + SMOOTH_RADIUS;
+                LodCell cell = sampled[sampledRow * sampledSize + sampledColumn];
+                grid[row * gridSize + column] = isSolid(cell) && cell.floating()
+                        ? smoothed(sampled, sampledSize, sampledRow, sampledColumn, cell, cellBlocks)
+                        : cell;
             }
         }
-        return smoothed;
+        return grid;
+    }
+
+    private static LodCell smoothed(LodCell[] sampled, int sampledSize, int row, int column, LodCell cell, int cellBlocks) {
+        long sum = 0;
+        int count = 0;
+        for (int dz = -SMOOTH_RADIUS; dz <= SMOOTH_RADIUS; dz++) {
+            for (int dx = -SMOOTH_RADIUS; dx <= SMOOTH_RADIUS; dx++) {
+                LodCell neighbour = sampled[(row + dz) * sampledSize + column + dx];
+                if (isSolid(neighbour) && neighbour.floating()) {
+                    sum += neighbour.bottom();
+                    count++;
+                }
+            }
+        }
+        int bottom = Math.min((int) Math.round((double) sum / count), cell.height() - 1);
+        return new LodCell(cell.sprite(), cell.height(), cell.tint(), bottom).quantized(cellBlocks);
     }
 
     public static TileText.Glyph[] bottoms(LodCell[] grid, int size) {

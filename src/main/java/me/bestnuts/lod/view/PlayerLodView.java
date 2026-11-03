@@ -185,22 +185,23 @@ final class PlayerLodView {
 
     private TileTexts encode(TileKey tile, double playerX, double playerZ, double inner) {
         int cellBlocks = tile.cellBlocks();
-        int gridSize = TileGlyphs.gridSize(TileKey.CELLS);
+        int sampledSize = TileGlyphs.sampledGridSize(TileKey.CELLS);
+        int ring = (sampledSize - TileKey.CELLS) / 2;
         double innerSquared = inner * inner;
-        LodCell[] grid = new LodCell[gridSize * gridSize];
-        for (int row = 0; row < gridSize; row++) {
-            for (int column = 0; column < gridSize; column++) {
-                int cellX = tile.originX() + (column - 1) * cellBlocks;
-                int cellZ = tile.originZ() + (row - 1) * cellBlocks;
+        LodCell[] sampled = new LodCell[sampledSize * sampledSize];
+        for (int row = 0; row < sampledSize; row++) {
+            for (int column = 0; column < sampledSize; column++) {
+                int cellX = tile.originX() + (column - ring) * cellBlocks;
+                int cellZ = tile.originZ() + (row - ring) * cellBlocks;
                 double dx = cellX + cellBlocks / 2.0 - playerX;
                 double dz = cellZ + cellBlocks / 2.0 - playerZ;
                 if (dx * dx + dz * dz >= innerSquared) {
                     LodCell cell = cache.sample(cellX, cellZ, cellBlocks);
-                    grid[row * gridSize + column] = cell == null ? null : cell.quantized(cellBlocks);
+                    sampled[row * sampledSize + column] = cell == null ? null : cell.quantized(cellBlocks);
                 }
             }
         }
-        grid = TileGlyphs.smoothUndersides(grid, TileKey.CELLS, cellBlocks);
+        LodCell[] grid = TileGlyphs.smoothUndersides(sampled, TileKey.CELLS, cellBlocks);
         TileText.Glyph[] tops = TileGlyphs.tops(grid, TileKey.CELLS);
         WallView wallView = wallView(tile, playerX, playerZ);
         TileText.Glyph[] walls = TileGlyphs.walls(grid, TileKey.CELLS, cellBlocks, wallView);
