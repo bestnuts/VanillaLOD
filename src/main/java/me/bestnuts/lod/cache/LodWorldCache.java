@@ -11,6 +11,7 @@ import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -64,7 +65,9 @@ public final class LodWorldCache {
         Map<Integer, Integer> spriteVotes = new HashMap<>();
         Map<Integer, Integer> spriteTopY = new HashMap<>();
         Map<Integer, Integer> spriteTints = new HashMap<>();
-        Map<Integer, Integer> spriteBottomY = new HashMap<>();
+        Map<Integer, Long> spriteBottomSum = new HashMap<>();
+        Map<Integer, Integer> spriteFloating = new HashMap<>();
+        Set<Integer> spriteGrounded = new HashSet<>();
         boolean cached = false;
 
         for (int dz = 0; dz < cellBlocks; dz += stride) {
@@ -85,7 +88,13 @@ public final class LodWorldCache {
                 spriteVotes.merge(sprite, 1, Integer::sum);
                 spriteTopY.merge(sprite, columns.topY(localX, localZ), Math::max);
                 spriteTints.putIfAbsent(sprite, columns.tint(localX, localZ));
-                spriteBottomY.merge(sprite, columns.bottomY(localX, localZ), Math::min);
+                int bottomY = columns.bottomY(localX, localZ);
+                if (bottomY == ChunkColumns.GROUNDED) {
+                    spriteGrounded.add(sprite);
+                } else {
+                    spriteBottomSum.merge(sprite, (long) bottomY, Long::sum);
+                    spriteFloating.merge(sprite, 1, Integer::sum);
+                }
             }
         }
 
@@ -93,12 +102,15 @@ public final class LodWorldCache {
             return cached ? LodCell.VOID : null;
         }
         int sprite = spriteVotes.entrySet().stream().max(Map.Entry.comparingByValue()).orElseThrow().getKey();
-        int bottomY = spriteBottomY.get(sprite);
+        // Island undersides deepen towards the middle; the mean keeps edge cells from taking the deepest column's thickness.
+        int bottom = spriteGrounded.contains(sprite)
+                ? LodCell.GROUNDED
+                : (int) Math.round((double) spriteBottomSum.get(sprite) / spriteFloating.get(sprite)) - minY;
         return new LodCell(
                 palette.sprite(sprite),
                 spriteTopY.get(sprite) + 1 - minY,
                 spriteTints.getOrDefault(sprite, LodBits.NO_TINT),
-                bottomY == ChunkColumns.GROUNDED ? LodCell.GROUNDED : bottomY - minY
+                bottom
         );
     }
 
