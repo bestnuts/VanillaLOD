@@ -125,12 +125,13 @@ public final class TileGlyphs {
     }
 
     // Border walls hang one cell below the lower side to cover seams against tiles of another level.
-    // Towards the void a floating cell shows its thickness instead, so no curtain hangs into empty space.
+    // Towards the void or an unsampled cell a floating cell shows its thickness instead, so no curtain hangs into empty space;
+    // where real terrain fills an unsampled cell, the depth push keeps that wall behind it.
     private static TileText.Glyph skirt(LodCell inside, LodCell outside, boolean zAxis, boolean facesPositive, int cellBlocks) {
         if (!isSolid(inside)) {
             return null;
         }
-        if (outside == LodCell.VOID && inside.floating()) {
+        if (!isSolid(outside) && inside.floating()) {
             return thickness(inside, cellBlocks, zAxis, facesPositive);
         }
         int bottom = (isSolid(outside) ? Math.min(inside.height(), outside.height()) : inside.height()) - cellBlocks;
@@ -138,10 +139,10 @@ public final class TileGlyphs {
     }
 
     private static TileText.Glyph wall(LodCell cell, LodCell next, int cellBlocks, boolean zAxis) {
-        if (isSolid(cell) && next == LodCell.VOID && cell.floating()) {
+        if (isSolid(cell) && !isSolid(next) && cell.floating()) {
             return thickness(cell, cellBlocks, zAxis, true);
         }
-        if (cell == LodCell.VOID && isSolid(next) && next.floating()) {
+        if (!isSolid(cell) && isSolid(next) && next.floating()) {
             return thickness(next, cellBlocks, zAxis, false);
         }
         if (!isSolid(cell) || !isSolid(next) || cell.height() == next.height()) {
