@@ -54,7 +54,14 @@ public final class LodCache {
         LodWorldCache cache = world(world);
         ChunkSnapshot snapshot = chunk.getChunkSnapshot(true, true, false);
         scanner.execute(() -> {
-            cache.put(snapshot.getX(), snapshot.getZ(), SurfaceScanner.scan(snapshot, cache.minY(), cache.floatingRule(), cache.palette()));
+            ChunkColumns columns;
+            try {
+                columns = SurfaceScanner.scan(snapshot, cache.minY(), cache.floatingRule(), cache.palette());
+            } catch (RuntimeException e) {
+                logger.log(Level.WARNING, "Failed to scan chunk " + snapshot.getX() + ", " + snapshot.getZ() + " in " + world.getName(), e);
+                return;
+            }
+            cache.put(snapshot.getX(), snapshot.getZ(), columns);
             for (Listener listener : listeners) {
                 listener.onChunkCached(world, snapshot.getX(), snapshot.getZ());
             }
