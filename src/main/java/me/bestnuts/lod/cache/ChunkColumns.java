@@ -8,6 +8,7 @@ public final class ChunkColumns {
 
     public static final int SIZE = 16;
     public static final int COLUMNS = SIZE * SIZE;
+    public static final int NO_SURFACE = -1;
 
     private final short[] heights = new short[COLUMNS];
     private final short[] sprites = new short[COLUMNS];

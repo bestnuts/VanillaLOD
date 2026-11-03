@@ -23,7 +23,7 @@ import me.bestnuts.lod.encode.LodCell;
 public final class LodWorldCache {
 
     private static final int REGION_SHIFT = 5;
-    private static final int FORMAT_VERSION = 3;
+    private static final int FORMAT_VERSION = 4;
     private static final int MAX_SAMPLES_PER_AXIS = 4;
 
     private final Path directory;
@@ -75,6 +75,9 @@ public final class LodWorldCache {
                 int localX = x & 15;
                 int localZ = z & 15;
                 int sprite = columns.sprite(localX, localZ);
+                if (sprite == ChunkColumns.NO_SURFACE) {
+                    continue;
+                }
                 spriteVotes.merge(sprite, 1, Integer::sum);
                 spriteTopY.merge(sprite, columns.topY(localX, localZ), Math::max);
                 spriteTints.putIfAbsent(sprite, columns.tint(localX, localZ));
