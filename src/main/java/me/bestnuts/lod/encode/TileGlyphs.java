@@ -37,7 +37,7 @@ public final class TileGlyphs {
         for (int row = 0; row < size; row++) {
             for (int column = 0; column < size; column++) {
                 LodCell cell = cell(grid, size, row, column);
-                if (cell == null || covered[row * size + column]) {
+                if (!isSolid(cell) || covered[row * size + column]) {
                     continue;
                 }
                 int runX = 1;
@@ -114,21 +114,39 @@ public final class TileGlyphs {
     }
 
     // Border walls hang one cell below the lower side to cover seams against tiles of another level.
+    // Towards the void a floating cell shows its thickness instead, so no curtain hangs into empty space.
     private static TileText.Glyph skirt(LodCell inside, LodCell outside, boolean zAxis, boolean facesPositive, int cellBlocks) {
-        if (inside == null) {
+        if (!isSolid(inside)) {
             return null;
         }
-        int bottom = outside == null ? inside.height() : Math.min(inside.height(), outside.height());
+        if (outside == LodCell.VOID && inside.floating()) {
+            return thickness(inside, cellBlocks, zAxis, facesPositive);
+        }
+        int bottom = isSolid(outside) ? Math.min(inside.height(), outside.height()) : inside.height();
         return face(inside, inside.height() - bottom + cellBlocks, cellBlocks, zAxis, facesPositive);
     }
 
     private static TileText.Glyph wall(LodCell cell, LodCell next, int cellBlocks, boolean zAxis) {
-        if (cell == null || next == null || cell.height() == next.height()) {
+        if (isSolid(cell) && next == LodCell.VOID && cell.floating()) {
+            return thickness(cell, cellBlocks, zAxis, true);
+        }
+        if (cell == LodCell.VOID && isSolid(next) && next.floating()) {
+            return thickness(next, cellBlocks, zAxis, false);
+        }
+        if (!isSolid(cell) || !isSolid(next) || cell.height() == next.height()) {
             return null;
         }
         boolean facesPositive = cell.height() > next.height();
         LodCell upper = facesPositive ? cell : next;
         return face(upper, Math.abs(cell.height() - next.height()), cellBlocks, zAxis, facesPositive);
+    }
+
+    private static TileText.Glyph thickness(LodCell cell, int cellBlocks, boolean zAxis, boolean facesPositive) {
+        return face(cell, cell.height() - cell.bottom(), cellBlocks, zAxis, facesPositive);
+    }
+
+    private static boolean isSolid(LodCell cell) {
+        return cell != null && cell.solid();
     }
 
     private static TileText.Glyph face(LodCell upper, int depth, int cellBlocks, boolean zAxis, boolean facesPositive) {

@@ -65,6 +65,7 @@ public final class LodWorldCache {
         Map<Integer, Integer> spriteTopY = new HashMap<>();
         Map<Integer, Integer> spriteTints = new HashMap<>();
         Map<Integer, Integer> spriteBottomY = new HashMap<>();
+        boolean cached = false;
 
         for (int dz = 0; dz < cellBlocks; dz += stride) {
             for (int dx = 0; dx < cellBlocks; dx += stride) {
@@ -74,6 +75,7 @@ public final class LodWorldCache {
                 if (columns == null) {
                     continue;
                 }
+                cached = true;
                 int localX = x & 15;
                 int localZ = z & 15;
                 int sprite = columns.sprite(localX, localZ);
@@ -88,7 +90,7 @@ public final class LodWorldCache {
         }
 
         if (spriteVotes.isEmpty()) {
-            return null;
+            return cached ? LodCell.VOID : null;
         }
         int sprite = spriteVotes.entrySet().stream().max(Map.Entry.comparingByValue()).orElseThrow().getKey();
         int bottomY = spriteBottomY.get(sprite);
