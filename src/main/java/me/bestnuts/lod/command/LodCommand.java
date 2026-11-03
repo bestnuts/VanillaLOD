@@ -97,6 +97,10 @@ public final class LodCommand implements BasicCommand {
             return;
         }
         Location center = source.getLocation();
+        if (!cache.covers(center.getWorld())) {
+            source.getSender().sendMessage(Component.text("LOD is disabled in " + center.getWorld().getName()));
+            return;
+        }
         PregenTask task = new PregenTask(center.getWorld(), center.getBlockX() >> 4, center.getBlockZ() >> 4, radius, filler,
                 message -> source.getSender().sendMessage(Component.text("LOD pregen " + message)));
         source.getSender().sendMessage(Component.text("LOD pregen " + task.total() + " chunks"));

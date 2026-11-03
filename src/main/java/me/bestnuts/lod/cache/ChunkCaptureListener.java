@@ -16,7 +16,7 @@ public final class ChunkCaptureListener implements Listener {
 
     @EventHandler(priority = EventPriority.MONITOR)
     public void onLoad(ChunkLoadEvent event) {
-        if (!cache.world(event.getWorld()).contains(event.getChunk().getX(), event.getChunk().getZ())) {
+        if (cache.covers(event.getWorld()) && !cache.world(event.getWorld()).contains(event.getChunk().getX(), event.getChunk().getZ())) {
             cache.capture(event.getChunk());
         }
     }

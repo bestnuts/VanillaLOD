@@ -18,3 +18,5 @@ auto-fill-generate: true
 auto-fill-interval-ticks: 100
 # 자동 채우기가 청크 로드 큐에 쌓아 둘 최대 요청 수.
 auto-fill-queue: 256
+# 네더처럼 천장이 있는 월드에도 LOD를 만들지. 바닐라 안개가 96블록 밖을 가려 기본은 끈다.
+ceiling-worlds: false

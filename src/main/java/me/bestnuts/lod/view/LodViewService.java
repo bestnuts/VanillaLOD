@@ -92,6 +92,9 @@ public final class LodViewService implements LodCache.Listener, Listener {
                 close(player.getUniqueId());
                 view = null;
             }
+            if (!settings.covers(player.getWorld())) {
+                continue;
+            }
             if (view == null) {
                 view = new PlayerLodView(plugin, player, cache.world(player.getWorld()), settings, builder);
                 views.put(player.getUniqueId(), view);

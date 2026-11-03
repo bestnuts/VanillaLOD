@@ -22,8 +22,8 @@ public final class VanillaLodPlugin extends JavaPlugin {
         saveDefaultConfig();
         LodSettings settings = LodSettings.from(getConfig());
 
-        cache = new LodCache(getDataFolder().toPath().resolve("cache"), getLogger());
-        getServer().getWorlds().forEach(cache::world);
+        cache = new LodCache(getDataFolder().toPath().resolve("cache"), getLogger(), settings::covers);
+        getServer().getWorlds().stream().filter(settings::covers).forEach(cache::world);
         views = new LodViewService(this, cache, settings);
         cache.addListener(views);
 

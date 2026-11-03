@@ -11,6 +11,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
+import java.util.function.Predicate;
 import java.util.logging.Logger;
 import org.bukkit.Chunk;
 import org.bukkit.ChunkSnapshot;
@@ -27,10 +28,16 @@ public final class LodCache {
     private final ExecutorService scanner = Executors.newFixedThreadPool(2, Thread.ofPlatform().name("VanillaLOD-scan-", 0).daemon().factory());
     private final Map<UUID, LodWorldCache> worlds = new ConcurrentHashMap<>();
     private final List<Listener> listeners = new CopyOnWriteArrayList<>();
+    private final Predicate<World> covers;
 
-    public LodCache(Path root, Logger logger) {
+    public LodCache(Path root, Logger logger, Predicate<World> covers) {
         this.root = root;
         this.logger = logger;
+        this.covers = covers;
+    }
+
+    public boolean covers(World world) {
+        return covers.test(world);
     }
 
     public void addListener(Listener listener) {
@@ -51,6 +58,9 @@ public final class LodCache {
 
     public void capture(Chunk chunk) {
         World world = chunk.getWorld();
+        if (!covers(world)) {
+            return;
+        }
         LodWorldCache cache = world(world);
         ChunkSnapshot snapshot = chunk.getChunkSnapshot(true, true, false);
         scanner.execute(() -> {

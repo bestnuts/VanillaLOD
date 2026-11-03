@@ -36,7 +36,9 @@ public final class LodAutoFill {
             if (filler.queued() >= settings.autoFillQueue()) {
                 return;
             }
-            fill(player);
+            if (settings.covers(player.getWorld())) {
+                fill(player);
+            }
         }
     }
 
