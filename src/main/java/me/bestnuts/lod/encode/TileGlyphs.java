@@ -1,6 +1,7 @@
 package me.bestnuts.lod.encode;
 
 import java.util.Set;
+import java.util.function.IntUnaryOperator;
 import net.kyori.adventure.key.Key;
 
 /**
@@ -70,7 +71,31 @@ public final class TileGlyphs {
                 glyphs[(columns + edge) * columns + line] = edgeWall(cell(grid, size, edge - 1, column), cell(grid, size, edge, column), edge, size, true, cellBlocks);
             }
         }
+        for (int edge = 0; edge <= size; edge++) {
+            int xColumn = edge;
+            int zRow = columns + edge;
+            mergeAlongEdge(glyphs, size, line -> line * columns + xColumn);
+            mergeAlongEdge(glyphs, size, line -> zRow * columns + line);
+        }
         return glyphs;
+    }
+
+    private static void mergeAlongEdge(TileText.Glyph[] glyphs, int size, IntUnaryOperator index) {
+        int line = 1;
+        while (line <= size) {
+            TileText.Glyph glyph = glyphs[index.applyAsInt(line)];
+            if (glyph == null) {
+                line++;
+                continue;
+            }
+            int run = 1;
+            while (run < LodBits.MAX_RUN && line + run <= size && glyph.equals(glyphs[index.applyAsInt(line + run)])) {
+                glyphs[index.applyAsInt(line + run)] = null;
+                run++;
+            }
+            glyphs[index.applyAsInt(line)] = new TileText.Glyph(glyph.sprite(), LodBits.withWallRun(glyph.packed(), run));
+            line += run;
+        }
     }
 
     private static TileText.Glyph edgeWall(LodCell before, LodCell after, int edge, int size, boolean zAxis, int cellBlocks) {
@@ -80,7 +105,7 @@ public final class TileGlyphs {
         if (edge == size) {
             return skirt(before, after, zAxis, true, cellBlocks);
         }
-        return wall(before, after, zAxis);
+        return wall(before, after, cellBlocks, zAxis);
     }
 
     // Border walls hang one cell below the lower side to cover seams against tiles of another level.
@@ -89,29 +114,29 @@ public final class TileGlyphs {
             return null;
         }
         int bottom = outside == null ? inside.height() : Math.min(inside.height(), outside.height());
-        return face(inside, inside.height() - bottom + cellBlocks, zAxis, facesPositive);
+        return face(inside, inside.height() - bottom + cellBlocks, cellBlocks, zAxis, facesPositive);
     }
 
-    private static TileText.Glyph wall(LodCell cell, LodCell next, boolean zAxis) {
+    private static TileText.Glyph wall(LodCell cell, LodCell next, int cellBlocks, boolean zAxis) {
         if (cell == null || next == null || cell.height() == next.height()) {
             return null;
         }
         boolean facesPositive = cell.height() > next.height();
         LodCell upper = facesPositive ? cell : next;
-        return face(upper, Math.abs(cell.height() - next.height()), zAxis, facesPositive);
+        return face(upper, Math.abs(cell.height() - next.height()), cellBlocks, zAxis, facesPositive);
     }
 
-    private static TileText.Glyph face(LodCell upper, int depth, boolean zAxis, boolean facesPositive) {
+    private static TileText.Glyph face(LodCell upper, int depth, int cellBlocks, boolean zAxis, boolean facesPositive) {
         String sprite = upper.sprite().value();
         if (DIRT_SIDED.contains(sprite)) {
-            return new TileText.Glyph(DIRT, LodBits.wall(upper.height(), depth, zAxis, facesPositive, LodBits.NO_TINT));
+            return new TileText.Glyph(DIRT, LodBits.wall(upper.height(), depth, cellBlocks, zAxis, facesPositive, LodBits.NO_TINT));
         }
         Key side = upper.sprite();
         if (sprite.endsWith(TOP_SUFFIX)) {
             String base = sprite.substring(BLOCK_PREFIX.length(), sprite.length() - TOP_SUFFIX.length());
             side = SpriteNames.find(base, base + "_side").orElse(upper.sprite());
         }
-        return new TileText.Glyph(side, LodBits.wall(upper.height(), depth, zAxis, facesPositive, upper.tint()));
+        return new TileText.Glyph(side, LodBits.wall(upper.height(), depth, cellBlocks, zAxis, facesPositive, upper.tint()));
     }
 
     private static boolean rowMatches(LodCell[] grid, int size, boolean[] covered, LodCell cell, int row, int column, int runX) {

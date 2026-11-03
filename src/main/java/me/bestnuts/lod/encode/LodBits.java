@@ -8,7 +8,7 @@ public final class LodBits {
     public static final double FOG_END_SCALE = 3.9;
     public static final int MAX_LEVEL = 7;
     public static final int MAX_HEIGHT = 510;
-    public static final int MAX_WALL_DEPTH = 127;
+    public static final int MAX_WALL_DEPTH_STEPS = 31;
     public static final int MAX_RUN = 4;
     public static final int NO_TINT = -1;
     public static final int EMPTY_CELL = 0xFFFFFF;
@@ -24,7 +24,8 @@ public final class LodBits {
     private static final int RUN_X_SHIFT = 12;
     private static final int RUN_Z_SHIFT = 10;
 
-    private static final int DEPTH_SHIFT = 8;
+    private static final int DEPTH_SHIFT = 10;
+    private static final int WALL_RUN_SHIFT = 8;
     private static final int WALL_Z_AXIS_BIT = 1 << 7;
     private static final int WALL_POSITIVE_BIT = 1 << 6;
     private static final int WALL_UNTINTED = 0x3F;
@@ -40,8 +41,9 @@ public final class LodBits {
         return packed;
     }
 
-    public static int wall(int top, int depth, boolean zAxis, boolean facesPositive, int tintRgb) {
-        int packed = height(top) | Math.clamp(depth, 0, MAX_WALL_DEPTH) << DEPTH_SHIFT;
+    public static int wall(int top, int depth, int cellBlocks, boolean zAxis, boolean facesPositive, int tintRgb) {
+        int steps = Math.ceilDiv(Math.max(depth, 0), wallDepthStep(cellBlocks));
+        int packed = height(top) | Math.min(steps, MAX_WALL_DEPTH_STEPS) << DEPTH_SHIFT;
         if (zAxis) {
             packed |= WALL_Z_AXIS_BIT;
         }
@@ -49,6 +51,15 @@ public final class LodBits {
             packed |= WALL_POSITIVE_BIT;
         }
         return packed | (tintRgb == NO_TINT ? WALL_UNTINTED : wallTint(tintRgb));
+    }
+
+    public static int withWallRun(int packed, int run) {
+        return packed | (Math.clamp(run, 1, MAX_RUN) - 1) << WALL_RUN_SHIFT;
+    }
+
+    // Rounded up depth only extends walls below the lower neighbour, where they stay hidden.
+    private static int wallDepthStep(int cellBlocks) {
+        return Math.max(1, cellBlocks / 2);
     }
 
     public static byte opacity(int kind, int level) {

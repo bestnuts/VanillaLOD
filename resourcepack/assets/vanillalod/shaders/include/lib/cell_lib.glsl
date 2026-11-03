@@ -79,23 +79,25 @@ CellVertex cellTopVertex(vec3 ws_origin, vec2 corner, float blocks, int packed) 
 }
 
 // Walls face the lower neighbour so their winding stays front facing from that side.
+// A merged wall glyph stretches along its edge over a run of identical walls whose own glyphs are blank.
 CellVertex cellWallVertex(vec3 ws_origin, vec2 corner, float blocks, int packed) {
     float top = lodMarkerOffset + cellHeight(packed);
-    float depth = float((packed >> lodDepthShift) & lodDepthMask);
+    float depth = float((packed >> lodDepthShift) & lodDepthMask) * max(1.0f, blocks * 0.5f);
+    float ls_wallSpan = float(((packed >> lodWallRunShift) & lodRunMask) + 1) * blocks;
     bool positive = (packed & lodWallPositiveBit) != 0;
     vec3 tint = cellWallTint(packed);
 
     if ((packed & lodWallZAxisBit) == 0) {
         float along = positive ? 1.0f - corner.y : corner.y;
         float height = corner.x > 0.5f ? top : top - depth;
-        vec3 ws_position = ws_origin + vec3(blocks, height, along * blocks);
-        return CellVertex(ws_position, vec2(along * blocks, top - height), tint * lodWallXShade);
+        vec3 ws_position = ws_origin + vec3(blocks, height, along * ls_wallSpan);
+        return CellVertex(ws_position, vec2(along * ls_wallSpan, top - height), tint * lodWallXShade);
     }
 
     bool upper = positive ? corner.y < 0.5f : corner.y > 0.5f;
     float height = upper ? top : top - depth;
-    vec3 ws_position = ws_origin + vec3(corner.x * blocks, height, blocks - lodWallRows * blocks);
-    return CellVertex(ws_position, vec2(corner.x * blocks, top - height), tint * lodWallZShade);
+    vec3 ws_position = ws_origin + vec3(corner.x * ls_wallSpan, height, blocks - lodWallRows * blocks);
+    return CellVertex(ws_position, vec2(corner.x * ls_wallSpan, top - height), tint * lodWallZShade);
 }
 
 #endif
