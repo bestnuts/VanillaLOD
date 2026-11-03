@@ -24,7 +24,7 @@ import me.bestnuts.lod.encode.LodCell;
 public final class LodWorldCache {
 
     private static final int REGION_SHIFT = 5;
-    private static final int FORMAT_VERSION = 5;
+    private static final int FORMAT_VERSION = 6;
     private static final int MAX_SAMPLES_PER_AXIS = 4;
 
     private final Path directory;
@@ -147,7 +147,7 @@ public final class LodWorldCache {
 
     private void readRegion(Path file) throws IOException {
         try (DataInputStream in = new DataInputStream(new BufferedInputStream(new GZIPInputStream(Files.newInputStream(file))))) {
-            if (in.readInt() != FORMAT_VERSION) {
+            if (in.readInt() != FORMAT_VERSION || in.readInt() != floatingGap) {
                 return;
             }
             int count = in.readInt();
@@ -166,6 +166,7 @@ public final class LodWorldCache {
         Path temp = file.resolveSibling(file.getFileName() + ".tmp");
         try (DataOutputStream out = new DataOutputStream(new BufferedOutputStream(new GZIPOutputStream(Files.newOutputStream(temp))))) {
             out.writeInt(FORMAT_VERSION);
+            out.writeInt(floatingGap);
             out.writeInt(keys.size());
             for (long key : keys) {
                 out.writeInt(unpackX(key));
