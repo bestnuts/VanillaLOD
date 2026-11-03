@@ -9,6 +9,7 @@ import net.kyori.adventure.key.Key;
 public record LodCell(Key sprite, int height, int tint, int bottom) {
 
     public static final int GROUNDED = Integer.MIN_VALUE;
+    public static final int NO_FLOOR = Integer.MIN_VALUE;
     public static final LodCell VOID = new LodCell(null, 0, LodBits.NO_TINT, GROUNDED);
 
     private static final int HEIGHT_STEPS_PER_CELL = 8;

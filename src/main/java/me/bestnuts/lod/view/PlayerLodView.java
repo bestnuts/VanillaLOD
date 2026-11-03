@@ -202,9 +202,10 @@ final class PlayerLodView {
             }
         }
         LodCell[] grid = TileGlyphs.smoothUndersides(sampled, TileKey.CELLS, cellBlocks);
+        int[] floors = ringFloors(tile, grid);
         TileText.Glyph[] tops = TileGlyphs.tops(grid, TileKey.CELLS);
         WallView wallView = wallView(tile, playerX, playerZ);
-        TileText.Glyph[] walls = TileGlyphs.walls(grid, TileKey.CELLS, cellBlocks, wallView);
+        TileText.Glyph[] walls = TileGlyphs.walls(grid, floors, TileKey.CELLS, cellBlocks, wallView);
         TileText.Glyph[] underWalls = TileGlyphs.underWalls(grid, TileKey.CELLS, cellBlocks, wallView);
         TileText.Glyph[] bottoms = TileGlyphs.bottoms(grid, TileKey.CELLS);
         int topGlyphs = glyphCount(tops);
@@ -221,6 +222,22 @@ final class PlayerLodView {
                 bottomGlyphs,
                 wallView
         );
+    }
+
+    private int[] ringFloors(TileKey tile, LodCell[] grid) {
+        int gridSize = TileGlyphs.gridSize(TileKey.CELLS);
+        int cellBlocks = tile.cellBlocks();
+        int[] floors = TileGlyphs.noFloors(TileKey.CELLS);
+        for (int row = 0; row < gridSize; row++) {
+            for (int column = 0; column < gridSize; column++) {
+                boolean ring = row == 0 || column == 0 || row == gridSize - 1 || column == gridSize - 1;
+                if (ring && grid[row * gridSize + column] != null) {
+                    floors[row * gridSize + column] = cache.lowestSurface(
+                            tile.originX() + (column - 1) * cellBlocks, tile.originZ() + (row - 1) * cellBlocks, cellBlocks);
+                }
+            }
+        }
+        return floors;
     }
 
     private static WallView wallView(TileKey tile, double playerX, double playerZ) {

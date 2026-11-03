@@ -26,6 +26,7 @@ public final class LodWorldCache {
     private static final int REGION_SHIFT = 5;
     private static final int FORMAT_VERSION = 7;
     private static final int MAX_SAMPLES_PER_AXIS = 4;
+    private static final int FLOOR_SAMPLES_PER_AXIS = 8;
 
     private final Path directory;
     private final int minY;
@@ -118,6 +119,23 @@ public final class LodWorldCache {
                 spriteTints.getOrDefault(sprite, LodBits.NO_TINT),
                 bottom
         );
+    }
+
+    // Lowest surface under a cell, sampled finer than the cell itself so it also covers what a finer neighbour tile draws.
+    public int lowestSurface(int blockX, int blockZ, int cellBlocks) {
+        int stride = Math.max(1, cellBlocks / FLOOR_SAMPLES_PER_AXIS);
+        int lowest = Integer.MAX_VALUE;
+        for (int dz = 0; dz < cellBlocks; dz += stride) {
+            for (int dx = 0; dx < cellBlocks; dx += stride) {
+                int x = blockX + dx;
+                int z = blockZ + dz;
+                ChunkColumns columns = chunks.get(key(x >> 4, z >> 4));
+                if (columns != null && columns.sprite(x & 15, z & 15) != ChunkColumns.NO_SURFACE) {
+                    lowest = Math.min(lowest, columns.topY(x & 15, z & 15) + 1 - minY);
+                }
+            }
+        }
+        return lowest == Integer.MAX_VALUE ? LodCell.NO_FLOOR : lowest;
     }
 
     public void load() throws IOException {

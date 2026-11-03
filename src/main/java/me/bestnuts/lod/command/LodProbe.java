@@ -38,7 +38,7 @@ final class LodProbe {
     static void spawn(Plugin plugin, Player player) {
         LodCell[] grid = grid();
         Component tops = TileText.encode(TileGlyphs.tops(grid, SIZE), SIZE);
-        Component walls = TileText.encode(TileGlyphs.walls(grid, SIZE, LodBits.cellBlocks(LEVEL), WallView.ALL), TileGlyphs.wallColumns(SIZE));
+        Component walls = TileText.encode(TileGlyphs.walls(grid, TileGlyphs.noFloors(SIZE), SIZE, LodBits.cellBlocks(LEVEL), WallView.ALL), TileGlyphs.wallColumns(SIZE));
         Location feet = player.getLocation();
 
         Location rawAt = feet.clone().add(feet.getDirection().setY(0).normalize().multiply(3));

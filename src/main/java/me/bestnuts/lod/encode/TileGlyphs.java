@@ -1,5 +1,6 @@
 package me.bestnuts.lod.encode;
 
+import java.util.Arrays;
 import java.util.Set;
 import java.util.function.IntUnaryOperator;
 import net.kyori.adventure.key.Key;
@@ -113,27 +114,38 @@ public final class TileGlyphs {
     }
 
     private interface EdgeRule {
-        TileText.Glyph between(LodCell before, LodCell after, int edge, boolean zAxis);
+        TileText.Glyph between(LodCell before, LodCell after, int beforeFloor, int afterFloor, int edge, boolean zAxis);
     }
 
-    public static TileText.Glyph[] walls(LodCell[] grid, int size, int cellBlocks, WallView view) {
-        return edgeLayer(grid, size, view, (before, after, edge, zAxis) -> edgeWall(before, after, edge, size, zAxis, cellBlocks));
+    public static int[] noFloors(int size) {
+        int[] floors = new int[gridSize(size) * gridSize(size)];
+        Arrays.fill(floors, LodCell.NO_FLOOR);
+        return floors;
+    }
+
+    // floors holds, per padded grid cell, the lowest surface under it (or NO_FLOOR); only the outer ring is read.
+    public static TileText.Glyph[] walls(LodCell[] grid, int[] floors, int size, int cellBlocks, WallView view) {
+        return edgeLayer(grid, floors, size, view,
+                (before, after, beforeFloor, afterFloor, edge, zAxis) -> edgeWall(before, after, beforeFloor, afterFloor, edge, size, zAxis, cellBlocks));
     }
 
     // The wall layer holds one face per edge; the lower part of a deeper floating side goes into this second layer.
     public static TileText.Glyph[] underWalls(LodCell[] grid, int size, int cellBlocks, WallView view) {
-        return edgeLayer(grid, size, view, (before, after, edge, zAxis) -> underWall(before, after, cellBlocks, zAxis));
+        return edgeLayer(grid, noFloors(size), size, view,
+                (before, after, beforeFloor, afterFloor, edge, zAxis) -> underWall(before, after, cellBlocks, zAxis));
     }
 
-    private static TileText.Glyph[] edgeLayer(LodCell[] grid, int size, WallView view, EdgeRule rule) {
+    private static TileText.Glyph[] edgeLayer(LodCell[] grid, int[] floors, int size, WallView view, EdgeRule rule) {
         int columns = wallColumns(size);
         TileText.Glyph[] glyphs = new TileText.Glyph[wallRows(size) * columns];
         for (int edge = 0; edge <= size; edge++) {
             for (int line = 1; line <= size; line++) {
                 int row = line - 1;
-                glyphs[line * columns + edge] = rule.between(cell(grid, size, row, edge - 1), cell(grid, size, row, edge), edge, false);
+                glyphs[line * columns + edge] = rule.between(cell(grid, size, row, edge - 1), cell(grid, size, row, edge),
+                        floor(floors, size, row, edge - 1), floor(floors, size, row, edge), edge, false);
                 int column = line - 1;
-                glyphs[(columns + edge) * columns + line] = rule.between(cell(grid, size, edge - 1, column), cell(grid, size, edge, column), edge, true);
+                glyphs[(columns + edge) * columns + line] = rule.between(cell(grid, size, edge - 1, column), cell(grid, size, edge, column),
+                        floor(floors, size, edge - 1, column), floor(floors, size, edge, column), edge, true);
             }
         }
         for (int i = 0; i < glyphs.length; i++) {
@@ -168,12 +180,12 @@ public final class TileGlyphs {
         }
     }
 
-    private static TileText.Glyph edgeWall(LodCell before, LodCell after, int edge, int size, boolean zAxis, int cellBlocks) {
+    private static TileText.Glyph edgeWall(LodCell before, LodCell after, int beforeFloor, int afterFloor, int edge, int size, boolean zAxis, int cellBlocks) {
         if (edge == 0) {
-            return skirt(after, before, zAxis, false, cellBlocks);
+            return skirt(after, before, beforeFloor, zAxis, false, cellBlocks);
         }
         if (edge == size) {
-            return skirt(before, after, zAxis, true, cellBlocks);
+            return skirt(before, after, afterFloor, zAxis, true, cellBlocks);
         }
         return wall(before, after, cellBlocks, zAxis);
     }
@@ -181,7 +193,8 @@ public final class TileGlyphs {
     // Border walls hang one cell below the lower side to cover seams against tiles of another level.
     // Towards the void or an unsampled cell a floating cell shows its thickness instead, so no curtain hangs into empty space;
     // where real terrain fills an unsampled cell, the depth push keeps that wall behind it.
-    private static TileText.Glyph skirt(LodCell inside, LodCell outside, boolean zAxis, boolean facesPositive, int cellBlocks) {
+    // It also reaches the lowest surface under the outside cell, which a finer neighbour tile may draw below this tile's sample.
+    private static TileText.Glyph skirt(LodCell inside, LodCell outside, int outsideFloor, boolean zAxis, boolean facesPositive, int cellBlocks) {
         if (!isSolid(inside)) {
             return null;
         }
@@ -189,6 +202,9 @@ public final class TileGlyphs {
             return thickness(inside, cellBlocks, zAxis, facesPositive);
         }
         int bottom = (isSolid(outside) ? Math.min(inside.height(), outside.height()) : inside.height()) - cellBlocks;
+        if (outsideFloor != LodCell.NO_FLOOR) {
+            bottom = Math.min(bottom, outsideFloor - 1);
+        }
         return face(inside, inside.height(), inside.height() - floorOf(inside, bottom), cellBlocks, zAxis, facesPositive);
     }
 
@@ -260,6 +276,10 @@ public final class TileGlyphs {
             }
         }
         return true;
+    }
+
+    private static int floor(int[] floors, int size, int row, int column) {
+        return floors[(row + 1) * gridSize(size) + column + 1];
     }
 
     private static LodCell cell(LodCell[] grid, int size, int row, int column) {
