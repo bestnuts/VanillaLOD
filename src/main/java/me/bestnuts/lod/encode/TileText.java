@@ -16,8 +16,8 @@ public final class TileText {
 
     private static final Key BLOCK_ATLAS = Key.key("minecraft", "blocks");
     private static final Key CELL_FONT = Key.key("vanillalod", "cell");
-    private static final Component SPACER = Component.text("");
-    private static final Component EMPTY = Component.text("");
+    private static final Component SPACER = Component.text("\uE000");
+    private static final Component EMPTY = Component.text("\uE001");
 
     private TileText() {
     }
