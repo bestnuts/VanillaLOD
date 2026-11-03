@@ -44,7 +44,14 @@ vec3 cellTopTint(int packed) {
         return vec3(1.0f);
     }
     int tint = packed & lodTopTintMask;
-    return vec3(float((tint >> 5) & 0x7) / 7.0f, float((tint >> 2) & 0x7) / 7.0f, float(tint & 0x3) / 3.0f);
+    int blue = tint % lodTintBlueLevels;
+    int green = (tint / lodTintBlueLevels) % lodTintGreenLevels;
+    int red = tint / (lodTintBlueLevels * lodTintGreenLevels);
+    return vec3(
+        float(red) / float(lodTintRedLevels - 1),
+        float(green) / float(lodTintGreenLevels - 1),
+        float(blue) / float(lodTintBlueLevels - 1)
+    );
 }
 
 vec2 cellTopRun(int packed) {

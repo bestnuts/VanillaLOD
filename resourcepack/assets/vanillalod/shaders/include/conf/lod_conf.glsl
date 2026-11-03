@@ -21,7 +21,11 @@ const int lodTintedBit = 1 << 14;
 const int lodRunXShift = 11;
 const int lodRunZShift = 8;
 const int lodTopRunMask = 0x7;
+// Top tints are an index into a 6 x 7 x 6 colour cube (red, green, blue) that keeps more blue than RGB332.
 const int lodTopTintMask = 0xFF;
+const int lodTintRedLevels = 6;
+const int lodTintGreenLevels = 7;
+const int lodTintBlueLevels = 6;
 const int lodWallRunMask = 0x3;
 
 // Wall depth is stored in steps of max(1, cell / 2) blocks, rounded up so walls never end short.

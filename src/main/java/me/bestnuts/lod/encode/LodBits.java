@@ -33,6 +33,11 @@ public final class LodBits {
     private static final int WALL_POSITIVE_BIT = 1 << 6;
     private static final int WALL_UNTINTED = 0x3F;
 
+    private static final int TINT_RED_LEVELS = 6;
+    private static final int TINT_GREEN_LEVELS = 7;
+    private static final int TINT_BLUE_LEVELS = 6;
+    private static final int WALL_TINT_LEVELS = 4;
+
     private LodBits() {
     }
 
@@ -81,17 +86,19 @@ public final class LodBits {
         return Math.clamp(height, 0, MAX_HEIGHT) << HEIGHT_SHIFT;
     }
 
+    // Index into a 6 x 7 x 6 colour cube; green gets the extra level because most tints are foliage.
     private static int topTint(int rgb) {
-        int red = (rgb >> 16 & 0xFF) >> 5;
-        int green = (rgb >> 8 & 0xFF) >> 5;
-        int blue = (rgb & 0xFF) >> 6;
-        return red << 5 | green << 2 | blue;
+        int red = level(rgb >> 16, TINT_RED_LEVELS);
+        int green = level(rgb >> 8, TINT_GREEN_LEVELS);
+        int blue = level(rgb, TINT_BLUE_LEVELS);
+        return (red * TINT_GREEN_LEVELS + green) * TINT_BLUE_LEVELS + blue;
     }
 
     private static int wallTint(int rgb) {
-        int red = (rgb >> 16 & 0xFF) >> 6;
-        int green = (rgb >> 8 & 0xFF) >> 6;
-        int blue = (rgb & 0xFF) >> 6;
-        return red << 4 | green << 2 | blue;
+        return level(rgb >> 16, WALL_TINT_LEVELS) << 4 | level(rgb >> 8, WALL_TINT_LEVELS) << 2 | level(rgb, WALL_TINT_LEVELS);
+    }
+
+    private static int level(int channel, int levels) {
+        return Math.round((channel & 0xFF) * (levels - 1) / 255.0f);
     }
 }
