@@ -43,12 +43,12 @@ public final class TileGlyphs {
                     continue;
                 }
                 int runX = 1;
-                while (runX < LodBits.MAX_RUN && column + runX < size && !covered[row * size + column + runX]
+                while (runX < LodBits.MAX_TOP_RUN && column + runX < size && !covered[row * size + column + runX]
                         && cell.equals(cell(grid, size, row, column + runX))) {
                     runX++;
                 }
                 int runZ = 1;
-                while (runZ < LodBits.MAX_RUN && row + runZ < size && rowMatches(grid, size, covered, cell, row + runZ, column, runX)) {
+                while (runZ < LodBits.MAX_TOP_RUN && row + runZ < size && rowMatches(grid, size, covered, cell, row + runZ, column, runX)) {
                     runZ++;
                 }
                 for (int dz = 0; dz < runZ; dz++) {
@@ -171,7 +171,7 @@ public final class TileGlyphs {
                 continue;
             }
             int run = 1;
-            while (run < LodBits.MAX_RUN && line + run <= size && glyph.equals(glyphs[index.applyAsInt(line + run)])) {
+            while (run < LodBits.MAX_WALL_RUN && line + run <= size && glyph.equals(glyphs[index.applyAsInt(line + run)])) {
                 glyphs[index.applyAsInt(line + run)] = null;
                 run++;
             }

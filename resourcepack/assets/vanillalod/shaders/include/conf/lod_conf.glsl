@@ -18,10 +18,11 @@ const int lodHeightShift = 15;
 const int lodHeightMask = 0x1FF;
 
 const int lodTintedBit = 1 << 14;
-const int lodRunXShift = 12;
-const int lodRunZShift = 10;
-const int lodRunMask = 0x3;
-const int lodTopTintMask = 0x3FF;
+const int lodRunXShift = 11;
+const int lodRunZShift = 8;
+const int lodTopRunMask = 0x7;
+const int lodTopTintMask = 0xFF;
+const int lodWallRunMask = 0x3;
 
 // Wall depth is stored in steps of max(1, cell / 2) blocks, rounded up so walls never end short.
 const int lodDepthShift = 10;

@@ -44,11 +44,11 @@ vec3 cellTopTint(int packed) {
         return vec3(1.0f);
     }
     int tint = packed & lodTopTintMask;
-    return vec3(float((tint >> 7) & 0x7) / 7.0f, float((tint >> 3) & 0xF) / 15.0f, float(tint & 0x7) / 7.0f);
+    return vec3(float((tint >> 5) & 0x7) / 7.0f, float((tint >> 2) & 0x7) / 7.0f, float(tint & 0x3) / 3.0f);
 }
 
 vec2 cellTopRun(int packed) {
-    return vec2(float(((packed >> lodRunXShift) & lodRunMask) + 1), float(((packed >> lodRunZShift) & lodRunMask) + 1));
+    return vec2(float(((packed >> lodRunXShift) & lodTopRunMask) + 1), float(((packed >> lodRunZShift) & lodTopRunMask) + 1));
 }
 
 vec3 cellWallTint(int packed) {
@@ -91,7 +91,7 @@ CellVertex cellBottomVertex(vec3 ws_origin, vec2 corner, float blocks, int packe
 CellVertex cellWallVertex(vec3 ws_origin, vec2 corner, float blocks, int packed) {
     float top = lodMarkerOffset + cellHeight(packed);
     float depth = float((packed >> lodDepthShift) & lodDepthMask) * max(1.0f, blocks * 0.5f);
-    float ls_wallSpan = float(((packed >> lodWallRunShift) & lodRunMask) + 1) * blocks;
+    float ls_wallSpan = float(((packed >> lodWallRunShift) & lodWallRunMask) + 1) * blocks;
     bool positive = (packed & lodWallPositiveBit) != 0;
     vec3 tint = cellWallTint(packed);
 
