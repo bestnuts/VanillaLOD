@@ -60,6 +60,40 @@ public final class TileGlyphs {
         return glyphs;
     }
 
+    // Undersides of floating cells average with their floating neighbours so a rounded island bottom steps gently
+    // instead of alternating between deep and shallow cells.
+    public static LodCell[] smoothUndersides(LodCell[] grid, int size, int cellBlocks) {
+        int gridSize = gridSize(size);
+        LodCell[] smoothed = grid.clone();
+        for (int row = 0; row < gridSize; row++) {
+            for (int column = 0; column < gridSize; column++) {
+                LodCell cell = grid[row * gridSize + column];
+                if (!isSolid(cell) || !cell.floating()) {
+                    continue;
+                }
+                long sum = 0;
+                int count = 0;
+                for (int dz = -1; dz <= 1; dz++) {
+                    for (int dx = -1; dx <= 1; dx++) {
+                        int neighbourRow = row + dz;
+                        int neighbourColumn = column + dx;
+                        if (neighbourRow < 0 || neighbourRow >= gridSize || neighbourColumn < 0 || neighbourColumn >= gridSize) {
+                            continue;
+                        }
+                        LodCell neighbour = grid[neighbourRow * gridSize + neighbourColumn];
+                        if (isSolid(neighbour) && neighbour.floating()) {
+                            sum += neighbour.bottom();
+                            count++;
+                        }
+                    }
+                }
+                int bottom = Math.min((int) Math.round((double) sum / count), cell.height() - 1);
+                smoothed[row * gridSize + column] = new LodCell(cell.sprite(), cell.height(), cell.tint(), bottom).quantized(cellBlocks);
+            }
+        }
+        return smoothed;
+    }
+
     public static TileText.Glyph[] bottoms(LodCell[] grid, int size) {
         LodCell[] undersides = new LodCell[grid.length];
         for (int i = 0; i < grid.length; i++) {

@@ -200,6 +200,7 @@ final class PlayerLodView {
                 }
             }
         }
+        grid = TileGlyphs.smoothUndersides(grid, TileKey.CELLS, cellBlocks);
         TileText.Glyph[] tops = TileGlyphs.tops(grid, TileKey.CELLS);
         WallView wallView = wallView(tile, playerX, playerZ);
         TileText.Glyph[] walls = TileGlyphs.walls(grid, TileKey.CELLS, cellBlocks, wallView);
