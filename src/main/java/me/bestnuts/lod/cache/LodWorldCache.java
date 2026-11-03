@@ -29,18 +29,24 @@ public final class LodWorldCache {
 
     private final Path directory;
     private final int minY;
+    private final int floatingGap;
     private final SpritePalette palette = new SpritePalette();
     private final Map<Long, ChunkColumns> chunks = new ConcurrentHashMap<>();
     private final Map<Long, Set<Long>> regionChunks = new ConcurrentHashMap<>();
     private final Set<Long> dirtyRegions = ConcurrentHashMap.newKeySet();
 
-    public LodWorldCache(Path directory, int minY) {
+    public LodWorldCache(Path directory, int minY, int floatingGap) {
         this.directory = directory;
         this.minY = minY;
+        this.floatingGap = floatingGap;
     }
 
     public int minY() {
         return minY;
+    }
+
+    public int floatingGap() {
+        return floatingGap;
     }
 
     public SpritePalette palette() {
