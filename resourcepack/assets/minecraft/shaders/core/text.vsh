@@ -52,7 +52,7 @@ void main() {
 
         int kind = cellKind(opacity);
         CellVertex cell;
-        if (kind == lodKindWall) {
+        if (kind == lodKindWall || kind == lodKindUnderWall) {
             cell = cellWallVertex(ws_origin, corner, blocks, packed);
         } else if (kind == lodKindBottom) {
             cell = cellBottomVertex(ws_origin, corner, blocks, packed);

@@ -11,6 +11,7 @@ const int lodKindMask = 0x3;
 const int lodKindTop = 0;
 const int lodKindWall = 1;
 const int lodKindBottom = 2;
+const int lodKindUnderWall = 3;
 const int lodEmptyCell = 0xFFFFFF;
 
 const int lodHeightShift = 15;

@@ -8,10 +8,11 @@ import org.bukkit.entity.TextDisplay;
 /**
  * Displays of one tile; a layer without any glyph has no display at all.
  */
-record TileEntities(TextDisplay top, TextDisplay walls, TextDisplay bottom, int topGlyphs, int wallGlyphs, int bottomGlyphs, WallView wallView) {
+record TileEntities(TextDisplay top, TextDisplay walls, TextDisplay underWalls, TextDisplay bottom,
+                    int topGlyphs, int wallGlyphs, int bottomGlyphs, WallView wallView) {
 
     List<TextDisplay> displays() {
-        return Stream.of(top, walls, bottom).filter(display -> display != null).toList();
+        return Stream.of(top, walls, underWalls, bottom).filter(display -> display != null).toList();
     }
 
     boolean isValid() {

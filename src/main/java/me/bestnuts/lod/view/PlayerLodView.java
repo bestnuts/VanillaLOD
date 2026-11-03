@@ -30,7 +30,8 @@ import org.bukkit.util.Transformation;
 
 final class PlayerLodView {
 
-    private record TileTexts(Component top, Component walls, Component bottom, int topGlyphs, int wallGlyphs, int bottomGlyphs, WallView wallView) {
+    private record TileTexts(Component top, Component walls, Component underWalls, Component bottom,
+                             int topGlyphs, int wallGlyphs, int bottomGlyphs, WallView wallView) {
     }
 
     private static final double REANCHOR_FRACTION = 0.75;
@@ -202,16 +203,19 @@ final class PlayerLodView {
         TileText.Glyph[] tops = TileGlyphs.tops(grid, TileKey.CELLS);
         WallView wallView = wallView(tile, playerX, playerZ);
         TileText.Glyph[] walls = TileGlyphs.walls(grid, TileKey.CELLS, cellBlocks, wallView);
+        TileText.Glyph[] underWalls = TileGlyphs.underWalls(grid, TileKey.CELLS, cellBlocks, wallView);
         TileText.Glyph[] bottoms = TileGlyphs.bottoms(grid, TileKey.CELLS);
         int topGlyphs = glyphCount(tops);
         int wallGlyphs = glyphCount(walls);
+        int underWallGlyphs = glyphCount(underWalls);
         int bottomGlyphs = glyphCount(bottoms);
         return new TileTexts(
                 topGlyphs == 0 ? null : TileText.encode(tops, TileKey.CELLS),
                 wallGlyphs == 0 ? null : TileText.encode(walls, TileGlyphs.wallColumns(TileKey.CELLS)),
+                underWallGlyphs == 0 ? null : TileText.encode(underWalls, TileGlyphs.wallColumns(TileKey.CELLS)),
                 bottomGlyphs == 0 ? null : TileText.encode(bottoms, TileKey.CELLS),
                 topGlyphs,
-                wallGlyphs,
+                wallGlyphs + underWallGlyphs,
                 bottomGlyphs,
                 wallView
         );
@@ -241,9 +245,11 @@ final class PlayerLodView {
                 LodBits.opacity(LodBits.KIND_TOP, tile.level()), TileKey.CELLS, topTransformation(tile));
         TextDisplay walls = layer(previous == null ? null : previous.walls(), texts.walls(),
                 LodBits.opacity(LodBits.KIND_WALL, tile.level()), TileGlyphs.wallColumns(TileKey.CELLS), wallTransformation(tile));
+        TextDisplay underWalls = layer(previous == null ? null : previous.underWalls(), texts.underWalls(),
+                LodBits.opacity(LodBits.KIND_UNDER_WALL, tile.level()), TileGlyphs.wallColumns(TileKey.CELLS), wallTransformation(tile));
         TextDisplay bottom = layer(previous == null ? null : previous.bottom(), texts.bottom(),
                 LodBits.opacity(LodBits.KIND_BOTTOM, tile.level()), TileKey.CELLS, topTransformation(tile));
-        displays.put(tile, new TileEntities(top, walls, bottom, texts.topGlyphs(), texts.wallGlyphs(), texts.bottomGlyphs(), texts.wallView()));
+        displays.put(tile, new TileEntities(top, walls, underWalls, bottom, texts.topGlyphs(), texts.wallGlyphs(), texts.bottomGlyphs(), texts.wallView()));
     }
 
     private TextDisplay layer(TextDisplay current, Component text, byte opacity, int columns, Transformation transformation) {
@@ -275,6 +281,9 @@ final class PlayerLodView {
             }
             if (entities.walls() != null) {
                 entities.walls().setTransformation(wallTransformation(tile));
+            }
+            if (entities.underWalls() != null) {
+                entities.underWalls().setTransformation(wallTransformation(tile));
             }
             if (entities.bottom() != null) {
                 entities.bottom().setTransformation(topTransformation(tile));

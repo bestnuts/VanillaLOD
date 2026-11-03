@@ -16,6 +16,7 @@ public final class LodBits {
     public static final int KIND_TOP = 0;
     public static final int KIND_WALL = 1;
     public static final int KIND_BOTTOM = 2;
+    public static final int KIND_UNDER_WALL = 3;
 
     private static final int OPACITY_BASE = 0xE0;
     private static final int KIND_SHIFT = 3;

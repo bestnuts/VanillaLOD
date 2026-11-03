@@ -71,15 +71,28 @@ public final class TileGlyphs {
         return tops(undersides, size);
     }
 
+    private interface EdgeRule {
+        TileText.Glyph between(LodCell before, LodCell after, int edge, boolean zAxis);
+    }
+
     public static TileText.Glyph[] walls(LodCell[] grid, int size, int cellBlocks, WallView view) {
+        return edgeLayer(grid, size, view, (before, after, edge, zAxis) -> edgeWall(before, after, edge, size, zAxis, cellBlocks));
+    }
+
+    // The wall layer holds one face per edge; the lower part of a deeper floating side goes into this second layer.
+    public static TileText.Glyph[] underWalls(LodCell[] grid, int size, int cellBlocks, WallView view) {
+        return edgeLayer(grid, size, view, (before, after, edge, zAxis) -> underWall(before, after, cellBlocks, zAxis));
+    }
+
+    private static TileText.Glyph[] edgeLayer(LodCell[] grid, int size, WallView view, EdgeRule rule) {
         int columns = wallColumns(size);
         TileText.Glyph[] glyphs = new TileText.Glyph[wallRows(size) * columns];
         for (int edge = 0; edge <= size; edge++) {
             for (int line = 1; line <= size; line++) {
                 int row = line - 1;
-                glyphs[line * columns + edge] = edgeWall(cell(grid, size, row, edge - 1), cell(grid, size, row, edge), edge, size, false, cellBlocks);
+                glyphs[line * columns + edge] = rule.between(cell(grid, size, row, edge - 1), cell(grid, size, row, edge), edge, false);
                 int column = line - 1;
-                glyphs[(columns + edge) * columns + line] = edgeWall(cell(grid, size, edge - 1, column), cell(grid, size, edge, column), edge, size, true, cellBlocks);
+                glyphs[(columns + edge) * columns + line] = rule.between(cell(grid, size, edge - 1, column), cell(grid, size, edge, column), edge, true);
             }
         }
         for (int i = 0; i < glyphs.length; i++) {
@@ -135,7 +148,7 @@ public final class TileGlyphs {
             return thickness(inside, cellBlocks, zAxis, facesPositive);
         }
         int bottom = (isSolid(outside) ? Math.min(inside.height(), outside.height()) : inside.height()) - cellBlocks;
-        return face(inside, inside.height() - floorOf(inside, bottom), cellBlocks, zAxis, facesPositive);
+        return face(inside, inside.height(), inside.height() - floorOf(inside, bottom), cellBlocks, zAxis, facesPositive);
     }
 
     private static TileText.Glyph wall(LodCell cell, LodCell next, int cellBlocks, boolean zAxis) {
@@ -151,7 +164,21 @@ public final class TileGlyphs {
         boolean facesPositive = cell.height() > next.height();
         LodCell upper = facesPositive ? cell : next;
         LodCell lower = facesPositive ? next : cell;
-        return face(upper, upper.height() - floorOf(upper, lower.height()), cellBlocks, zAxis, facesPositive);
+        return face(upper, upper.height(), upper.height() - floorOf(upper, lower.height()), cellBlocks, zAxis, facesPositive);
+    }
+
+    private static TileText.Glyph underWall(LodCell cell, LodCell next, int cellBlocks, boolean zAxis) {
+        if (!isSolid(cell) || !isSolid(next) || !cell.floating() || !next.floating() || cell.bottom() == next.bottom()) {
+            return null;
+        }
+        boolean facesPositive = cell.bottom() < next.bottom();
+        LodCell deeper = facesPositive ? cell : next;
+        LodCell shallower = facesPositive ? next : cell;
+        int top = Math.min(shallower.bottom(), deeper.height());
+        if (top <= deeper.bottom()) {
+            return null;
+        }
+        return face(deeper, top, top - deeper.bottom(), cellBlocks, zAxis, facesPositive);
     }
 
     // A floating cell's side ends at its own underside instead of reaching across the void to whatever lies below.
@@ -160,24 +187,24 @@ public final class TileGlyphs {
     }
 
     private static TileText.Glyph thickness(LodCell cell, int cellBlocks, boolean zAxis, boolean facesPositive) {
-        return face(cell, cell.height() - cell.bottom(), cellBlocks, zAxis, facesPositive);
+        return face(cell, cell.height(), cell.height() - cell.bottom(), cellBlocks, zAxis, facesPositive);
     }
 
     private static boolean isSolid(LodCell cell) {
         return cell != null && cell.solid();
     }
 
-    private static TileText.Glyph face(LodCell upper, int depth, int cellBlocks, boolean zAxis, boolean facesPositive) {
+    private static TileText.Glyph face(LodCell upper, int top, int depth, int cellBlocks, boolean zAxis, boolean facesPositive) {
         String sprite = upper.sprite().value();
         if (DIRT_SIDED.contains(sprite)) {
-            return new TileText.Glyph(DIRT, LodBits.wall(upper.height(), depth, cellBlocks, zAxis, facesPositive, LodBits.NO_TINT));
+            return new TileText.Glyph(DIRT, LodBits.wall(top, depth, cellBlocks, zAxis, facesPositive, LodBits.NO_TINT));
         }
         Key side = upper.sprite();
         if (sprite.endsWith(TOP_SUFFIX)) {
             String base = sprite.substring(BLOCK_PREFIX.length(), sprite.length() - TOP_SUFFIX.length());
             side = SpriteNames.find(base, base + "_side").orElse(upper.sprite());
         }
-        return new TileText.Glyph(side, LodBits.wall(upper.height(), depth, cellBlocks, zAxis, facesPositive, upper.tint()));
+        return new TileText.Glyph(side, LodBits.wall(top, depth, cellBlocks, zAxis, facesPositive, upper.tint()));
     }
 
     private static boolean rowMatches(LodCell[] grid, int size, boolean[] covered, LodCell cell, int row, int column, int runX) {
