@@ -50,9 +50,12 @@ void main() {
         vec2 corner = cellCorner(Position, blocks);
         vec3 ws_origin = cellOrigin(Position, corner, blocks);
 
+        int kind = cellKind(opacity);
         CellVertex cell;
-        if (cellKind(opacity) == lodKindWall) {
+        if (kind == lodKindWall) {
             cell = cellWallVertex(ws_origin, corner, blocks, packed);
+        } else if (kind == lodKindBottom) {
+            cell = cellBottomVertex(ws_origin, corner, blocks, packed);
         } else {
             cell = cellTopVertex(ws_origin, corner, blocks, packed);
         }

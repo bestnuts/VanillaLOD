@@ -30,7 +30,7 @@ import org.bukkit.util.Transformation;
 
 final class PlayerLodView {
 
-    private record TileTexts(Component top, Component walls, int topGlyphs, int wallGlyphs, WallView wallView) {
+    private record TileTexts(Component top, Component walls, Component bottom, int topGlyphs, int wallGlyphs, int bottomGlyphs, WallView wallView) {
     }
 
     private static final double REANCHOR_FRACTION = 0.75;
@@ -135,12 +135,14 @@ final class PlayerLodView {
         int entities = 0;
         int topGlyphs = 0;
         int wallGlyphs = 0;
+        int bottomGlyphs = 0;
         for (TileEntities tile : displays.values()) {
             entities += tile.displays().size();
             topGlyphs += tile.topGlyphs();
             wallGlyphs += tile.wallGlyphs();
+            bottomGlyphs += tile.bottomGlyphs();
         }
-        return new ViewStats(displays.size(), entities, topGlyphs, wallGlyphs, missing.size() + dirty.size() + building.size());
+        return new ViewStats(displays.size(), entities, topGlyphs, wallGlyphs, bottomGlyphs, missing.size() + dirty.size() + building.size());
     }
 
     void close() {
@@ -200,13 +202,17 @@ final class PlayerLodView {
         TileText.Glyph[] tops = TileGlyphs.tops(grid, TileKey.CELLS);
         WallView wallView = wallView(tile, playerX, playerZ);
         TileText.Glyph[] walls = TileGlyphs.walls(grid, TileKey.CELLS, cellBlocks, wallView);
+        TileText.Glyph[] bottoms = TileGlyphs.bottoms(grid, TileKey.CELLS);
         int topGlyphs = glyphCount(tops);
         int wallGlyphs = glyphCount(walls);
+        int bottomGlyphs = glyphCount(bottoms);
         return new TileTexts(
                 topGlyphs == 0 ? null : TileText.encode(tops, TileKey.CELLS),
                 wallGlyphs == 0 ? null : TileText.encode(walls, TileGlyphs.wallColumns(TileKey.CELLS)),
+                bottomGlyphs == 0 ? null : TileText.encode(bottoms, TileKey.CELLS),
                 topGlyphs,
                 wallGlyphs,
+                bottomGlyphs,
                 wallView
         );
     }
@@ -235,7 +241,9 @@ final class PlayerLodView {
                 LodBits.opacity(LodBits.KIND_TOP, tile.level()), TileKey.CELLS, topTransformation(tile));
         TextDisplay walls = layer(previous == null ? null : previous.walls(), texts.walls(),
                 LodBits.opacity(LodBits.KIND_WALL, tile.level()), TileGlyphs.wallColumns(TileKey.CELLS), wallTransformation(tile));
-        displays.put(tile, new TileEntities(top, walls, texts.topGlyphs(), texts.wallGlyphs(), texts.wallView()));
+        TextDisplay bottom = layer(previous == null ? null : previous.bottom(), texts.bottom(),
+                LodBits.opacity(LodBits.KIND_BOTTOM, tile.level()), TileKey.CELLS, topTransformation(tile));
+        displays.put(tile, new TileEntities(top, walls, bottom, texts.topGlyphs(), texts.wallGlyphs(), texts.bottomGlyphs(), texts.wallView()));
     }
 
     private TextDisplay layer(TextDisplay current, Component text, byte opacity, int columns, Transformation transformation) {
@@ -267,6 +275,9 @@ final class PlayerLodView {
             }
             if (entities.walls() != null) {
                 entities.walls().setTransformation(wallTransformation(tile));
+            }
+            if (entities.bottom() != null) {
+                entities.bottom().setTransformation(topTransformation(tile));
             }
         });
     }

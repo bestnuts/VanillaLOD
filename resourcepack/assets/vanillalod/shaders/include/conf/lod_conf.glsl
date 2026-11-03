@@ -10,6 +10,7 @@ const int lodKindShift = 3;
 const int lodKindMask = 0x3;
 const int lodKindTop = 0;
 const int lodKindWall = 1;
+const int lodKindBottom = 2;
 const int lodEmptyCell = 0xFFFFFF;
 
 const int lodHeightShift = 15;
@@ -39,6 +40,7 @@ const float lodCornerPhaseHigh = 0.9f;
 
 const float lodWallXShade = 0.6f;
 const float lodWallZShade = 0.8f;
+const float lodBottomShade = 0.5f;
 
 // Terrain and LOD share one render distance fog stretched towards the 4x far plane.
 // lodFogEndScale must match me.bestnuts.lod.encode.LodBits.FOG_END_SCALE.

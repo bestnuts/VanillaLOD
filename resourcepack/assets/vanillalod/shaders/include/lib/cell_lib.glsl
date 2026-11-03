@@ -78,6 +78,14 @@ CellVertex cellTopVertex(vec3 ws_origin, vec2 corner, float blocks, int packed) 
     return CellVertex(ws_position, corner * ls_span, cellTopTint(packed));
 }
 
+// The underside of a floating cell mirrors its z mapping, flipping the winding so the face points down.
+CellVertex cellBottomVertex(vec3 ws_origin, vec2 corner, float blocks, int packed) {
+    vec2 ls_span = cellTopRun(packed) * blocks;
+    float along = 1.0f - corner.y;
+    vec3 ws_position = ws_origin + vec3(corner.x * ls_span.x, lodMarkerOffset + cellHeight(packed), along * ls_span.y);
+    return CellVertex(ws_position, vec2(corner.x, along) * ls_span, cellTopTint(packed) * lodBottomShade);
+}
+
 // Walls face the lower neighbour so their winding stays front facing from that side.
 // A merged wall glyph stretches along its edge over a run of identical walls whose own glyphs are blank.
 CellVertex cellWallVertex(vec3 ws_origin, vec2 corner, float blocks, int packed) {

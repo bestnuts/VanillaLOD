@@ -60,6 +60,17 @@ public final class TileGlyphs {
         return glyphs;
     }
 
+    public static TileText.Glyph[] bottoms(LodCell[] grid, int size) {
+        LodCell[] undersides = new LodCell[grid.length];
+        for (int i = 0; i < grid.length; i++) {
+            LodCell cell = grid[i];
+            if (isSolid(cell) && cell.floating()) {
+                undersides[i] = new LodCell(cell.sprite(), cell.bottom(), cell.tint());
+            }
+        }
+        return tops(undersides, size);
+    }
+
     public static TileText.Glyph[] walls(LodCell[] grid, int size, int cellBlocks, WallView view) {
         int columns = wallColumns(size);
         TileText.Glyph[] glyphs = new TileText.Glyph[wallRows(size) * columns];
