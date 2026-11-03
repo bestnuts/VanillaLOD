@@ -30,6 +30,7 @@ public final class LodWorldCache {
     private final int minY;
     private final SpritePalette palette = new SpritePalette();
     private final Map<Long, ChunkColumns> chunks = new ConcurrentHashMap<>();
+    private final Map<Long, Set<Long>> regionChunks = new ConcurrentHashMap<>();
     private final Set<Long> dirtyRegions = ConcurrentHashMap.newKeySet();
 
     public LodWorldCache(Path directory, int minY) {
@@ -54,8 +55,8 @@ public final class LodWorldCache {
     }
 
     public void put(int chunkX, int chunkZ, ChunkColumns columns) {
-        chunks.put(key(chunkX, chunkZ), columns);
-        dirtyRegions.add(key(chunkX >> REGION_SHIFT, chunkZ >> REGION_SHIFT));
+        store(chunkX, chunkZ, columns);
+        dirtyRegions.add(regionKey(chunkX, chunkZ));
     }
 
     public LodCell sample(int blockX, int blockZ, int cellBlocks) {
@@ -125,31 +126,36 @@ public final class LodWorldCache {
             for (int i = 0; i < count; i++) {
                 int chunkX = in.readInt();
                 int chunkZ = in.readInt();
-                chunks.put(key(chunkX, chunkZ), ChunkColumns.read(in));
+                store(chunkX, chunkZ, ChunkColumns.read(in));
             }
         }
     }
 
     private void writeRegion(int regionX, int regionZ) throws IOException {
-        Map<Long, ChunkColumns> regionChunks = new HashMap<>();
-        chunks.forEach((key, columns) -> {
-            if (unpackX(key) >> REGION_SHIFT == regionX && unpackZ(key) >> REGION_SHIFT == regionZ) {
-                regionChunks.put(key, columns);
-            }
-        });
+        List<Long> keys = List.copyOf(regionChunks.getOrDefault(key(regionX, regionZ), Set.of()));
 
         Path file = directory.resolve("r." + regionX + "." + regionZ + ".lod");
         Path temp = file.resolveSibling(file.getFileName() + ".tmp");
         try (DataOutputStream out = new DataOutputStream(new BufferedOutputStream(new GZIPOutputStream(Files.newOutputStream(temp))))) {
             out.writeInt(FORMAT_VERSION);
-            out.writeInt(regionChunks.size());
-            for (Map.Entry<Long, ChunkColumns> entry : regionChunks.entrySet()) {
-                out.writeInt(unpackX(entry.getKey()));
-                out.writeInt(unpackZ(entry.getKey()));
-                entry.getValue().write(out);
+            out.writeInt(keys.size());
+            for (long key : keys) {
+                out.writeInt(unpackX(key));
+                out.writeInt(unpackZ(key));
+                chunks.get(key).write(out);
             }
         }
         Files.move(temp, file, StandardCopyOption.REPLACE_EXISTING);
+    }
+
+    private void store(int chunkX, int chunkZ, ChunkColumns columns) {
+        long key = key(chunkX, chunkZ);
+        chunks.put(key, columns);
+        regionChunks.computeIfAbsent(regionKey(chunkX, chunkZ), region -> ConcurrentHashMap.newKeySet()).add(key);
+    }
+
+    private static long regionKey(int chunkX, int chunkZ) {
+        return key(chunkX >> REGION_SHIFT, chunkZ >> REGION_SHIFT);
     }
 
     private static long key(int x, int z) {
