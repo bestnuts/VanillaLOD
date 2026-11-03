@@ -24,29 +24,29 @@ import me.bestnuts.lod.encode.LodCell;
 public final class LodWorldCache {
 
     private static final int REGION_SHIFT = 5;
-    private static final int FORMAT_VERSION = 6;
+    private static final int FORMAT_VERSION = 7;
     private static final int MAX_SAMPLES_PER_AXIS = 4;
 
     private final Path directory;
     private final int minY;
-    private final int floatingGap;
+    private final FloatingRule floatingRule;
     private final SpritePalette palette = new SpritePalette();
     private final Map<Long, ChunkColumns> chunks = new ConcurrentHashMap<>();
     private final Map<Long, Set<Long>> regionChunks = new ConcurrentHashMap<>();
     private final Set<Long> dirtyRegions = ConcurrentHashMap.newKeySet();
 
-    public LodWorldCache(Path directory, int minY, int floatingGap) {
+    public LodWorldCache(Path directory, int minY, FloatingRule floatingRule) {
         this.directory = directory;
         this.minY = minY;
-        this.floatingGap = floatingGap;
+        this.floatingRule = floatingRule;
     }
 
     public int minY() {
         return minY;
     }
 
-    public int floatingGap() {
-        return floatingGap;
+    public FloatingRule floatingRule() {
+        return floatingRule;
     }
 
     public SpritePalette palette() {
@@ -147,7 +147,7 @@ public final class LodWorldCache {
 
     private void readRegion(Path file) throws IOException {
         try (DataInputStream in = new DataInputStream(new BufferedInputStream(new GZIPInputStream(Files.newInputStream(file))))) {
-            if (in.readInt() != FORMAT_VERSION || in.readInt() != floatingGap) {
+            if (in.readInt() != FORMAT_VERSION || in.readInt() != floatingRule.airGap() || in.readInt() != floatingRule.maxThickness()) {
                 return;
             }
             int count = in.readInt();
@@ -166,7 +166,8 @@ public final class LodWorldCache {
         Path temp = file.resolveSibling(file.getFileName() + ".tmp");
         try (DataOutputStream out = new DataOutputStream(new BufferedOutputStream(new GZIPOutputStream(Files.newOutputStream(temp))))) {
             out.writeInt(FORMAT_VERSION);
-            out.writeInt(floatingGap);
+            out.writeInt(floatingRule.airGap());
+            out.writeInt(floatingRule.maxThickness());
             out.writeInt(keys.size());
             for (long key : keys) {
                 out.writeInt(unpackX(key));

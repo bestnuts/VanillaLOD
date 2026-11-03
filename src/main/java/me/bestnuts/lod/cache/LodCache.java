@@ -22,8 +22,6 @@ public final class LodCache {
         void onChunkCached(World world, int chunkX, int chunkZ);
     }
 
-    private static final int END_FLOATING_GAP = 8;
-
     private final Path root;
     private final Logger logger;
     private final ExecutorService scanner = Executors.newFixedThreadPool(2, Thread.ofPlatform().name("VanillaLOD-scan-", 0).daemon().factory());
@@ -41,7 +39,7 @@ public final class LodCache {
 
     public LodWorldCache world(World world) {
         return worlds.computeIfAbsent(world.getUID(), id -> {
-            LodWorldCache cache = new LodWorldCache(root.resolve(world.getName()), world.getMinHeight(), floatingGap(world));
+            LodWorldCache cache = new LodWorldCache(root.resolve(world.getName()), world.getMinHeight(), FloatingRule.of(world));
             try {
                 cache.load();
             } catch (IOException e) {
@@ -51,18 +49,12 @@ public final class LodCache {
         });
     }
 
-    // End islands stack over one another, so an air gap under an island is enough to call it floating there;
-    // elsewhere caves would make cliffs stop at their ceilings, so only columns over pure air float.
-    private static int floatingGap(World world) {
-        return world.getEnvironment() == World.Environment.THE_END ? END_FLOATING_GAP : SurfaceScanner.AIR_TO_FLOOR;
-    }
-
     public void capture(Chunk chunk) {
         World world = chunk.getWorld();
         LodWorldCache cache = world(world);
         ChunkSnapshot snapshot = chunk.getChunkSnapshot(true, true, false);
         scanner.execute(() -> {
-            cache.put(snapshot.getX(), snapshot.getZ(), SurfaceScanner.scan(snapshot, cache.minY(), cache.floatingGap(), cache.palette()));
+            cache.put(snapshot.getX(), snapshot.getZ(), SurfaceScanner.scan(snapshot, cache.minY(), cache.floatingRule(), cache.palette()));
             for (Listener listener : listeners) {
                 listener.onChunkCached(world, snapshot.getX(), snapshot.getZ());
             }
