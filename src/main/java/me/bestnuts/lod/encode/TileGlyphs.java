@@ -133,8 +133,8 @@ public final class TileGlyphs {
         if (outside == LodCell.VOID && inside.floating()) {
             return thickness(inside, cellBlocks, zAxis, facesPositive);
         }
-        int bottom = isSolid(outside) ? Math.min(inside.height(), outside.height()) : inside.height();
-        return face(inside, inside.height() - bottom + cellBlocks, cellBlocks, zAxis, facesPositive);
+        int bottom = (isSolid(outside) ? Math.min(inside.height(), outside.height()) : inside.height()) - cellBlocks;
+        return face(inside, inside.height() - floorOf(inside, bottom), cellBlocks, zAxis, facesPositive);
     }
 
     private static TileText.Glyph wall(LodCell cell, LodCell next, int cellBlocks, boolean zAxis) {
@@ -149,7 +149,13 @@ public final class TileGlyphs {
         }
         boolean facesPositive = cell.height() > next.height();
         LodCell upper = facesPositive ? cell : next;
-        return face(upper, Math.abs(cell.height() - next.height()), cellBlocks, zAxis, facesPositive);
+        LodCell lower = facesPositive ? next : cell;
+        return face(upper, upper.height() - floorOf(upper, lower.height()), cellBlocks, zAxis, facesPositive);
+    }
+
+    // A floating cell's side ends at its own underside instead of reaching across the void to whatever lies below.
+    private static int floorOf(LodCell cell, int bottom) {
+        return cell.floating() ? Math.max(bottom, cell.bottom()) : bottom;
     }
 
     private static TileText.Glyph thickness(LodCell cell, int cellBlocks, boolean zAxis, boolean facesPositive) {
