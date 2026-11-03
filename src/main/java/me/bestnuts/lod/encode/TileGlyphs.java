@@ -209,10 +209,15 @@ public final class TileGlyphs {
         LodCell deeper = facesPositive ? cell : next;
         LodCell shallower = facesPositive ? next : cell;
         int top = Math.min(shallower.bottom(), deeper.height());
-        if (top <= deeper.bottom()) {
+        if (top - deeper.bottom() < minUnderStep(cellBlocks)) {
             return null;
         }
         return face(deeper, top, top - deeper.bottom(), cellBlocks, zAxis, facesPositive);
+    }
+
+    // Underside steps under a quarter cell read as noise rather than shape, so they get no wall of their own.
+    private static int minUnderStep(int cellBlocks) {
+        return Math.max(1, cellBlocks / 4);
     }
 
     // A floating cell's side ends at its own underside instead of reaching across the void to whatever lies below.
