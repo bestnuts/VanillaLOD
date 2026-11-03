@@ -21,6 +21,10 @@ public final class SurfaceScanner {
 
     private static void scanColumn(ChunkSnapshot snapshot, int minY, SpritePalette palette, ChunkColumns columns, int x, int z) {
         int y = snapshot.getHighestBlockYAt(x, z);
+        if (y < minY) {
+            columns.set(x, z, minY, ChunkColumns.NO_SURFACE, LodBits.NO_TINT);
+            return;
+        }
         Material material = snapshot.getBlockType(x, y, z);
         while (y > minY && !SurfaceMaterial.isSurface(material)) {
             y--;
