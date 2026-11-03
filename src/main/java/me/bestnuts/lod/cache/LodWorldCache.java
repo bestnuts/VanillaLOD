@@ -45,6 +45,10 @@ public final class LodWorldCache {
         return palette;
     }
 
+    public int size() {
+        return chunks.size();
+    }
+
     public boolean contains(int chunkX, int chunkZ) {
         return chunks.containsKey(key(chunkX, chunkZ));
     }

@@ -3,6 +3,7 @@ package me.bestnuts.lod.view;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Queue;
 import java.util.Set;
 import java.util.UUID;
@@ -41,6 +42,10 @@ public final class LodViewService implements LodCache.Listener, Listener {
 
     public void start() {
         task = plugin.getServer().getScheduler().runTaskTimer(plugin, this::tick, settings.updateIntervalTicks(), settings.updateIntervalTicks());
+    }
+
+    public Optional<ViewStats> stats(Player player) {
+        return Optional.ofNullable(views.get(player.getUniqueId())).map(PlayerLodView::stats);
     }
 
     public boolean toggle(Player player) {

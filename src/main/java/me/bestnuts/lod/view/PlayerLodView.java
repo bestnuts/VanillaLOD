@@ -124,6 +124,18 @@ final class PlayerLodView {
         startBuilds(location);
     }
 
+    ViewStats stats() {
+        int entities = 0;
+        int topGlyphs = 0;
+        int wallGlyphs = 0;
+        for (TileEntities tile : displays.values()) {
+            entities += tile.displays().size();
+            topGlyphs += tile.topGlyphs();
+            wallGlyphs += tile.wallGlyphs();
+        }
+        return new ViewStats(displays.size(), entities, topGlyphs, wallGlyphs, missing.size() + dirty.size() + building.size());
+    }
+
     void close() {
         closed = true;
         displays.values().forEach(TileEntities::remove);
