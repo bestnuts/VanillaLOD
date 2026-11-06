@@ -42,14 +42,16 @@ vec4 calculateFinalColor(vec4 color) {
     vec4 fogColor = FogColor;
     #endif
 
+    vec2 environmentalFog = vec2(FogEnvironmentalStart, FogEnvironmentalEnd);
     float renderDistanceStart = FogRenderDistanceStart;
     float renderDistanceEnd = FogRenderDistanceEnd;
     if (cellBlockSize > 0.0f) {
+        environmentalFog = horizonEnvironmentalFog(cellHorizon);
         renderDistanceStart = horizonFogStart(cellHorizon);
         renderDistanceEnd = horizonFogEnd(cellHorizon);
     }
 
-    color = apply_fog(color, sphericalVertexDistance, cylindricalVertexDistance, FogEnvironmentalStart, FogEnvironmentalEnd, renderDistanceStart, renderDistanceEnd, fogColor);
+    color = apply_fog(color, sphericalVertexDistance, cylindricalVertexDistance, environmentalFog.x, environmentalFog.y, renderDistanceStart, renderDistanceEnd, fogColor);
     #endif
 
     return color;

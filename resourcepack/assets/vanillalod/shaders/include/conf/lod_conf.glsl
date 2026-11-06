@@ -55,6 +55,10 @@ const float lodBottomShade = 0.5f;
 const float lodFogStartFraction = 0.5f;
 const float lodTerrainFogEndScale = 3.9f;
 
+// Vanilla's clear sky environmental fog ends at 1024 blocks and rain only pulls it in by 256. Anything ending sooner
+// is water, lava, a mob effect or boss fog, which LOD keeps as is.
+const float lodAtmosphericFogMin = 256.0f;
+
 // Vanilla clips at 4x the render distance. LOD past lodDepthKeepScale x render distance is squeezed linearly so the
 // horizon lands at lodDepthLimitScale x render distance.
 const float lodDepthKeepScale = 1.5f;
