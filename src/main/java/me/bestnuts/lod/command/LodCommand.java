@@ -17,7 +17,8 @@ import org.bukkit.plugin.Plugin;
 
 public final class LodCommand implements BasicCommand {
 
-    private static final int MAX_PREGEN_RADIUS = 512;
+    // 2048 chunks reach the deepest horizon band, 32768 blocks.
+    private static final int MAX_PREGEN_RADIUS = 2048;
     private static final int MAX_NETWORK_ANCHORS = 8;
 
     private final Plugin plugin;
