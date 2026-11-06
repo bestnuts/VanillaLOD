@@ -21,9 +21,9 @@ final class TileEncoder {
             for (int column = 0; column < sampledSize; column++) {
                 int cellX = tile.originX() + (column - SAMPLED_RING) * cellBlocks;
                 int cellZ = tile.originZ() + (row - SAMPLED_RING) * cellBlocks;
-                if (!variant.covered(cellX + cellBlocks / 2.0, cellZ + cellBlocks / 2.0)) {
-                    LodCell cell = cache.sample(cellX, cellZ, cellBlocks);
-                    sampled[row * sampledSize + column] = cell == null ? null : cell.quantized(cellBlocks);
+                LodCell cell = cache.sample(cellX, cellZ, cellBlocks);
+                if (cell != null && !variant.covered(cellX + cellBlocks / 2.0, cellZ + cellBlocks / 2.0, surfaceY(cache, cell))) {
+                    sampled[row * sampledSize + column] = cell.quantized(cellBlocks);
                 }
             }
         }
@@ -46,6 +46,10 @@ final class TileEncoder {
                 wallGlyphs + underWallGlyphs,
                 bottomGlyphs
         );
+    }
+
+    private static int surfaceY(LodWorldCache cache, LodCell cell) {
+        return cell.solid() ? cache.minY() + cell.height() : Integer.MAX_VALUE;
     }
 
     private static int[] ringFloors(LodWorldCache cache, TileKey tile, LodCell[] grid) {

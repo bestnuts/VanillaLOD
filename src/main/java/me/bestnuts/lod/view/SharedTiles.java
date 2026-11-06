@@ -18,6 +18,7 @@ import java.util.stream.Stream;
 import me.bestnuts.lod.LodSettings;
 import me.bestnuts.lod.cache.LodWorldCache;
 import me.bestnuts.lod.encode.LodBits;
+import me.bestnuts.lod.encode.LodCell;
 import me.bestnuts.lod.encode.TileDisplays;
 import me.bestnuts.lod.encode.TileGlyphs;
 import me.bestnuts.lod.encode.TileTransform;
@@ -44,6 +45,8 @@ final class SharedTiles {
 
     private static final double REANCHOR_FRACTION = 0.75;
 
+    private static final int ELEVATION_CELL = 256;
+
     private final Plugin plugin;
     private final World world;
     private final LodWorldCache cache;
@@ -64,6 +67,12 @@ final class SharedTiles {
         this.settings = settings;
         this.builder = builder;
         this.onReady = onReady;
+    }
+
+    // Sampled at a stride the always loaded coarse grid serves, so the main thread never reads region files here.
+    int surfaceY(double x, double z) {
+        LodCell cell = cache.sample((int) Math.floor(x) - ELEVATION_CELL / 2, (int) Math.floor(z) - ELEVATION_CELL / 2, ELEVATION_CELL);
+        return cell == null || !cell.solid() ? cache.minY() : cache.minY() + cell.height();
     }
 
     double reanchorDistance() {

@@ -48,12 +48,13 @@ final class PlayerLodView {
         double viewX = (location.getBlockX() >> 4 << 4) + 8.0;
         double viewZ = (location.getBlockZ() >> 4 << 4) + 8.0;
         LodRange range = LodRange.of(player, settings);
-        desired = TileSelector.select(viewX, viewZ, range.inner(), range.outer(), settings);
+        double elevation = Math.max(0.0, player.getEyeLocation().getY() - shared.surfaceY(viewX, viewZ));
+        desired = TileSelector.select(viewX, viewZ, elevation, range.selectionInner(world), range.outer(), settings);
 
         waiting.clear();
         queue.clear();
         for (TileKey tile : desired) {
-            TileVariant variant = TileVariant.of(tile, viewX, viewZ, range.inner());
+            TileVariant variant = TileVariant.of(tile, viewX, viewZ, range);
             Placement current = shown.get(tile);
             if (current != null && current.variant().equals(variant)) {
                 if (current.anchor().distance(location) > shared.reanchorDistance()) {

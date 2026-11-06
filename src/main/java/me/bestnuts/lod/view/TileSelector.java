@@ -9,7 +9,9 @@ public final class TileSelector {
     private TileSelector() {
     }
 
-    public static Set<TileKey> select(double x, double z, double innerRadius, double outerRadius, LodSettings settings) {
+    // Detail falls off with the distance to the camera including its height above the ground, so looking down from
+    // high up does not fill the area under the player with the finest tiles.
+    public static Set<TileKey> select(double x, double z, double elevation, double innerRadius, double outerRadius, LodSettings settings) {
         Set<TileKey> tiles = new HashSet<>();
         int rootBlocks = TileKey.CELLS << settings.maxLevel();
         int minTileX = Math.floorDiv((int) Math.floor(x - outerRadius), rootBlocks);
@@ -19,22 +21,22 @@ public final class TileSelector {
 
         for (int tileZ = minTileZ; tileZ <= maxTileZ; tileZ++) {
             for (int tileX = minTileX; tileX <= maxTileX; tileX++) {
-                visit(new TileKey(settings.maxLevel(), tileX, tileZ), x, z, innerRadius, outerRadius, settings, tiles);
+                visit(new TileKey(settings.maxLevel(), tileX, tileZ), x, z, elevation, innerRadius, outerRadius, settings, tiles);
             }
         }
         return tiles;
     }
 
-    private static void visit(TileKey tile, double x, double z, double innerRadius, double outerRadius, LodSettings settings, Set<TileKey> tiles) {
+    private static void visit(TileKey tile, double x, double z, double elevation, double innerRadius, double outerRadius, LodSettings settings, Set<TileKey> tiles) {
         double nearest = tile.nearestDistance(x, z);
         if (nearest > outerRadius || tile.farthestDistance(x, z) < innerRadius) {
             return;
         }
-        if (tile.level() > settings.minLevel() && nearest < settings.detail() * tile.blocks()) {
+        if (tile.level() > settings.minLevel() && Math.hypot(nearest, elevation) < settings.detail() * tile.blocks()) {
             int childLevel = tile.level() - 1;
             for (int dz = 0; dz < 2; dz++) {
                 for (int dx = 0; dx < 2; dx++) {
-                    visit(new TileKey(childLevel, tile.tileX() * 2 + dx, tile.tileZ() * 2 + dz), x, z, innerRadius, outerRadius, settings, tiles);
+                    visit(new TileKey(childLevel, tile.tileX() * 2 + dx, tile.tileZ() * 2 + dz), x, z, elevation, innerRadius, outerRadius, settings, tiles);
                 }
             }
             return;
