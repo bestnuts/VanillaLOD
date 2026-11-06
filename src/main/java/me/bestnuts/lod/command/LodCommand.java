@@ -8,14 +8,17 @@ import me.bestnuts.lod.cache.ChunkFiller;
 import me.bestnuts.lod.cache.LodCache;
 import me.bestnuts.lod.cache.PregenTask;
 import me.bestnuts.lod.view.LodViewService;
+import me.bestnuts.lod.view.NetworkStats;
 import net.kyori.adventure.text.Component;
 import org.bukkit.Location;
+import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.Plugin;
 
 public final class LodCommand implements BasicCommand {
 
     private static final int MAX_PREGEN_RADIUS = 512;
+    private static final int MAX_NETWORK_ANCHORS = 8;
 
     private final Plugin plugin;
     private final LodCache cache;
@@ -32,7 +35,7 @@ public final class LodCommand implements BasicCommand {
     @Override
     public void execute(CommandSourceStack source, String[] args) {
         if (args.length == 0) {
-            source.getSender().sendMessage(Component.text("/lod toggle | /lod pregen <radius chunks> | /lod save | /lod probe | /lod stats"));
+            source.getSender().sendMessage(Component.text("/lod toggle | /lod pregen <radius chunks> | /lod save | /lod probe | /lod stats | /lod network"));
             return;
         }
         switch (args[0]) {
@@ -40,6 +43,7 @@ public final class LodCommand implements BasicCommand {
             case "pregen" -> pregen(source, args);
             case "probe" -> probe(source);
             case "stats" -> stats(source);
+            case "network" -> network(source);
             case "save" -> {
                 cache.saveAll();
                 source.getSender().sendMessage(Component.text("LOD cache saved"));
@@ -50,7 +54,7 @@ public final class LodCommand implements BasicCommand {
 
     @Override
     public Collection<String> suggest(CommandSourceStack source, String[] args) {
-        return args.length <= 1 ? List.of("toggle", "pregen", "save", "probe", "stats") : List.of();
+        return args.length <= 1 ? List.of("toggle", "pregen", "save", "probe", "stats", "network") : List.of();
     }
 
     @Override
@@ -79,6 +83,32 @@ public final class LodCommand implements BasicCommand {
                         + stats.topGlyphs() + " top glyphs, " + stats.wallGlyphs() + " wall glyphs, " + stats.bottomGlyphs() + " bottom glyphs, "
                         + stats.pendingBuilds() + " pending builds")),
                 () -> player.sendMessage(Component.text("LOD view: off")));
+    }
+
+    private void network(CommandSourceStack source) {
+        CommandSender sender = source.getSender();
+        List<NetworkStats> worlds = sender instanceof Player player
+                ? views.network(player.getWorld()).stream().toList()
+                : views.network();
+        if (worlds.isEmpty()) {
+            sender.sendMessage(Component.text("LOD network: no shared tiles"));
+            return;
+        }
+        for (NetworkStats stats : worlds) {
+            int saved = stats.displayViews() - stats.displays();
+            int percent = stats.displayViews() == 0 ? 0 : Math.round(100.0f * saved / stats.displayViews());
+            sender.sendMessage(Component.text("LOD network " + stats.world() + ": " + stats.tiles() + " tile groups ("
+                    + stats.sharedTiles() + " shared, max " + stats.maxViewers() + " viewers), "
+                    + stats.displays() + " displays for " + stats.displayViews() + " views (" + saved + " saved, " + percent + "%)"));
+            sender.sendMessage(Component.text("  variants: " + stats.shownVariants() + " shown, " + stats.cachedVariants() + " encoded, "
+                    + stats.building() + " building"));
+            stats.anchors().stream().limit(MAX_NETWORK_ANCHORS).forEach(anchor -> sender.sendMessage(Component.text(
+                    "  anchor " + anchor.anchor().x() + ", " + anchor.anchor().z() + ": " + anchor.tiles() + " tiles, "
+                            + anchor.displays() + " displays, viewers " + String.join(", ", anchor.viewers()))));
+            if (stats.anchors().size() > MAX_NETWORK_ANCHORS) {
+                sender.sendMessage(Component.text("  ... " + (stats.anchors().size() - MAX_NETWORK_ANCHORS) + " more anchors"));
+            }
+        }
     }
 
     private void probe(CommandSourceStack source) {

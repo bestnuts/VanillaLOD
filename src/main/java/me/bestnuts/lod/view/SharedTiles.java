@@ -5,8 +5,10 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.TreeSet;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 import java.util.stream.Collectors;
@@ -170,6 +172,39 @@ final class SharedTiles {
                 shared.entities = layers(key, TileEntities.EMPTY, texts.get(key.variant()), shared.viewers);
             }
         });
+    }
+
+    NetworkStats network() {
+        Map<TileAnchor, List<Map.Entry<Key, Shared>>> byAnchor = tiles.entrySet().stream()
+                .collect(Collectors.groupingBy(entry -> entry.getKey().anchor()));
+        List<NetworkStats.Anchor> anchors = byAnchor.entrySet().stream()
+                .map(group -> {
+                    Set<String> names = new TreeSet<>();
+                    int displays = 0;
+                    for (Map.Entry<Key, Shared> entry : group.getValue()) {
+                        entry.getValue().viewers.forEach(player -> names.add(player.getName()));
+                        displays += entry.getValue().entities.displays().size();
+                    }
+                    return new NetworkStats.Anchor(group.getKey(), List.copyOf(names), group.getValue().size(), displays);
+                })
+                .sorted(Comparator.comparingInt(NetworkStats.Anchor::displays).reversed())
+                .toList();
+        int sharedTiles = 0;
+        int maxViewers = 0;
+        int displays = 0;
+        int displayViews = 0;
+        for (Shared shared : tiles.values()) {
+            int count = shared.entities.displays().size();
+            displays += count;
+            displayViews += count * shared.viewers.size();
+            maxViewers = Math.max(maxViewers, shared.viewers.size());
+            if (shared.viewers.size() > 1) {
+                sharedTiles++;
+            }
+        }
+        long variants = tiles.keySet().stream().map(Key::variant).distinct().count();
+        return new NetworkStats(world.getName(), tiles.size(), sharedTiles, maxViewers, displays, displayViews,
+                (int) variants, texts.size(), building.size(), anchors);
     }
 
     void close() {

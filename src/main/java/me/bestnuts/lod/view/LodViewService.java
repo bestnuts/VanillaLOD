@@ -2,6 +2,7 @@ package me.bestnuts.lod.view;
 
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Queue;
@@ -47,6 +48,14 @@ public final class LodViewService implements LodCache.Listener, Listener {
 
     public Optional<ViewStats> stats(Player player) {
         return Optional.ofNullable(views.get(player.getUniqueId())).map(PlayerLodView::stats);
+    }
+
+    public Optional<NetworkStats> network(World world) {
+        return Optional.ofNullable(worlds.get(world.getUID())).map(SharedTiles::network);
+    }
+
+    public List<NetworkStats> network() {
+        return worlds.values().stream().map(SharedTiles::network).toList();
     }
 
     public boolean toggle(Player player) {
