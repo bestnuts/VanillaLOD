@@ -21,8 +21,9 @@ final class PlayerLodView {
     private final SharedTiles shared;
     private final LodSettings settings;
     private final Map<TileKey, Placement> shown = new HashMap<>();
+    private final Map<TileVariant, TileKey> waiting = new HashMap<>();
+    private final List<TileVariant> queue = new ArrayList<>();
     private TileAnchor home;
-    private int pending;
 
     PlayerLodView(Player player, SharedTiles shared, LodSettings settings) {
         this.player = player;
@@ -56,7 +57,8 @@ final class PlayerLodView {
             return true;
         });
 
-        List<TileVariant> missing = new ArrayList<>();
+        waiting.clear();
+        queue.clear();
         for (TileKey tile : desired) {
             TileVariant variant = TileVariant.of(tile, viewX, viewZ, range.inner());
             Placement current = shown.get(tile);
@@ -70,22 +72,23 @@ final class PlayerLodView {
             if (shared.ready(variant)) {
                 place(tile, variant, location, current);
             } else {
-                missing.add(variant);
+                waiting.put(variant, tile);
+                queue.add(variant);
             }
         }
-        pending = missing.size();
+        queue.sort(Comparator.comparingDouble(variant -> variant.tile().nearestDistance(viewX, viewZ)));
+        startBuilds();
+    }
 
-        missing.sort(Comparator.comparingDouble(variant -> variant.tile().nearestDistance(viewX, viewZ)));
-        int budget = settings.buildsPerUpdate() - (int) missing.stream().filter(shared::building).count();
-        for (TileVariant variant : missing) {
-            if (budget <= 0) {
-                break;
-            }
-            if (!shared.building(variant)) {
-                shared.build(variant);
-                budget--;
-            }
+    // Called as soon as any variant finishes encoding, so a tile shows up and the next build starts without waiting for the next update.
+    void ready(TileVariant variant) {
+        TileKey tile = waiting.remove(variant);
+        if (tile == null) {
+            return;
         }
+        queue.remove(variant);
+        place(tile, variant, player.getLocation(), shown.get(tile));
+        startBuilds();
     }
 
     ViewStats stats() {
@@ -104,12 +107,27 @@ final class PlayerLodView {
             wallGlyphs += texts.wallGlyphs();
             bottomGlyphs += texts.bottomGlyphs();
         }
-        return new ViewStats(shown.size(), sharedTiles, displays, topGlyphs, wallGlyphs, bottomGlyphs, pending);
+        return new ViewStats(shown.size(), sharedTiles, displays, topGlyphs, wallGlyphs, bottomGlyphs, queue.size());
     }
 
     void close() {
         shown.values().forEach(this::hide);
         shown.clear();
+        waiting.clear();
+        queue.clear();
+    }
+
+    private void startBuilds() {
+        int budget = settings.buildsPerUpdate() - (int) queue.stream().filter(shared::building).count();
+        for (TileVariant variant : queue) {
+            if (budget <= 0) {
+                break;
+            }
+            if (!shared.building(variant)) {
+                shared.build(variant);
+                budget--;
+            }
+        }
     }
 
     // The replacement is shown before the old placement is hidden, so the tile never leaves a gap for a frame.

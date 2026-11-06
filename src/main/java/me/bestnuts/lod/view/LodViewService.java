@@ -111,13 +111,17 @@ public final class LodViewService implements LodCache.Listener, Listener {
             if (view == null) {
                 World world = player.getWorld();
                 SharedTiles tiles = worlds.computeIfAbsent(world.getUID(),
-                        id -> new SharedTiles(plugin, world, cache.world(world), settings, builder));
+                        id -> new SharedTiles(plugin, world, cache.world(world), settings, builder, variant -> ready(world, variant)));
                 view = new PlayerLodView(player, tiles, settings);
                 views.put(player.getUniqueId(), view);
             }
             view.update();
         }
         worlds.values().forEach(SharedTiles::endTick);
+    }
+
+    private void ready(World world, TileVariant variant) {
+        views.values().stream().filter(view -> view.world().equals(world)).forEach(view -> view.ready(variant));
     }
 
     private void close(UUID player) {

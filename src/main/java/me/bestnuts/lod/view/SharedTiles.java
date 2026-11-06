@@ -12,6 +12,7 @@ import java.util.Set;
 import java.util.TreeSet;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import me.bestnuts.lod.LodSettings;
@@ -48,6 +49,7 @@ final class SharedTiles {
     private final LodWorldCache cache;
     private final LodSettings settings;
     private final Executor builder;
+    private final Consumer<TileVariant> onReady;
     private final Map<TileVariant, TileTexts> texts = new HashMap<>();
     private final Set<TileVariant> building = new HashSet<>();
     private final Set<TileVariant> stale = new HashSet<>();
@@ -55,12 +57,13 @@ final class SharedTiles {
     private final Map<Key, Shared> tiles = new HashMap<>();
     private boolean closed;
 
-    SharedTiles(Plugin plugin, World world, LodWorldCache cache, LodSettings settings, Executor builder) {
+    SharedTiles(Plugin plugin, World world, LodWorldCache cache, LodSettings settings, Executor builder, Consumer<TileVariant> onReady) {
         this.plugin = plugin;
         this.world = world;
         this.cache = cache;
         this.settings = settings;
         this.builder = builder;
+        this.onReady = onReady;
     }
 
     double reanchorDistance() {
@@ -238,6 +241,7 @@ final class SharedTiles {
         if (stale.remove(variant)) {
             build(variant);
         }
+        onReady.accept(variant);
     }
 
     private TileEntities layers(Key key, TileEntities previous, TileTexts encoded, Set<Player> viewers) {
