@@ -38,6 +38,11 @@ public record TileKey(int level, int tileX, int tileZ) {
         return Math.hypot(dx, dz);
     }
 
+    public boolean overlaps(TileKey other) {
+        return originX() < other.originX() + other.blocks() && other.originX() < originX() + blocks()
+                && originZ() < other.originZ() + other.blocks() && other.originZ() < originZ() + blocks();
+    }
+
     public boolean overlapsChunk(int chunkX, int chunkZ) {
         int minX = chunkX << 4;
         int minZ = chunkZ << 4;

@@ -23,6 +23,7 @@ final class PlayerLodView {
     private final Map<TileKey, Placement> shown = new HashMap<>();
     private final Map<TileVariant, TileKey> waiting = new HashMap<>();
     private final List<TileVariant> queue = new ArrayList<>();
+    private Set<TileKey> desired = Set.of();
     private TileAnchor home;
 
     PlayerLodView(Player player, SharedTiles shared, LodSettings settings) {
@@ -47,15 +48,7 @@ final class PlayerLodView {
         double viewX = (location.getBlockX() >> 4 << 4) + 8.0;
         double viewZ = (location.getBlockZ() >> 4 << 4) + 8.0;
         LodRange range = LodRange.of(player, settings);
-        Set<TileKey> desired = TileSelector.select(viewX, viewZ, range.inner(), range.outer(), settings);
-
-        shown.entrySet().removeIf(entry -> {
-            if (desired.contains(entry.getKey())) {
-                return false;
-            }
-            hide(entry.getValue());
-            return true;
-        });
+        desired = TileSelector.select(viewX, viewZ, range.inner(), range.outer(), settings);
 
         waiting.clear();
         queue.clear();
@@ -77,6 +70,7 @@ final class PlayerLodView {
             }
         }
         queue.sort(Comparator.comparingDouble(variant -> variant.tile().nearestDistance(viewX, viewZ)));
+        retire();
         startBuilds();
     }
 
@@ -88,6 +82,7 @@ final class PlayerLodView {
         }
         queue.remove(variant);
         place(tile, variant, player.getLocation(), shown.get(tile));
+        retire();
         startBuilds();
     }
 
@@ -115,6 +110,25 @@ final class PlayerLodView {
         shown.clear();
         waiting.clear();
         queue.clear();
+    }
+
+    // A tile that left the selection stays until every selected tile over its area is shown, so a level change
+    // never opens a hole while the finer or coarser replacement is still encoding.
+    private void retire() {
+        shown.entrySet().removeIf(entry -> {
+            TileKey tile = entry.getKey();
+            if (desired.contains(tile)) {
+                return false;
+            }
+            boolean replaced = desired.stream()
+                    .filter(other -> other.overlaps(tile))
+                    .allMatch(shown::containsKey);
+            if (!replaced) {
+                return false;
+            }
+            hide(entry.getValue());
+            return true;
+        });
     }
 
     private void startBuilds() {
