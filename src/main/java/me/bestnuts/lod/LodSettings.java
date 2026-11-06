@@ -11,6 +11,7 @@ public record LodSettings(
         int anchorGrid,
         int updateIntervalTicks,
         int buildsPerUpdate,
+        int buildThreads,
         int pregenParallel,
         int saveIntervalMinutes,
         boolean autoFill,
@@ -26,6 +27,10 @@ public record LodSettings(
         return ceilingWorlds || !world.hasCeiling();
     }
 
+    public int effectiveBuildThreads() {
+        return buildThreads > 0 ? buildThreads : Math.max(2, Runtime.getRuntime().availableProcessors() / 2);
+    }
+
     public static LodSettings from(ConfigurationSection config) {
         return new LodSettings(
                 config.getDouble("detail", 2.0),
@@ -35,6 +40,7 @@ public record LodSettings(
                 config.getInt("anchor-grid", 128),
                 config.getInt("update-interval-ticks", 10),
                 config.getInt("builds-per-update", 8),
+                config.getInt("build-threads", 0),
                 config.getInt("pregen-parallel", 8),
                 config.getInt("save-interval-minutes", 5),
                 config.getBoolean("auto-fill", true),

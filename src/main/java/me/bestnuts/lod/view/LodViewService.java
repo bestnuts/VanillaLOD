@@ -29,7 +29,7 @@ public final class LodViewService implements LodCache.Listener, Listener {
     private final Plugin plugin;
     private final LodCache cache;
     private final LodSettings settings;
-    private final ExecutorService builder = Executors.newFixedThreadPool(2, Thread.ofPlatform().name("VanillaLOD-build-", 0).daemon().factory());
+    private final ExecutorService builder;
     private final Map<UUID, PlayerLodView> views = new HashMap<>();
     private final Map<UUID, SharedTiles> worlds = new HashMap<>();
     private final Set<UUID> disabledPlayers = new HashSet<>();
@@ -40,6 +40,8 @@ public final class LodViewService implements LodCache.Listener, Listener {
         this.plugin = plugin;
         this.cache = cache;
         this.settings = settings;
+        this.builder = Executors.newFixedThreadPool(settings.effectiveBuildThreads(),
+                Thread.ofPlatform().name("VanillaLOD-build-", 0).daemon().factory());
     }
 
     public void start() {
