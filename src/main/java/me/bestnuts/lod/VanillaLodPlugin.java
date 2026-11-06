@@ -34,7 +34,7 @@ public final class VanillaLodPlugin extends JavaPlugin {
         getServer().getPluginManager().registerEvents(views, this);
         ChunkFiller filler = new ChunkFiller(cache, settings.pregenParallel());
         filler.start(this);
-        new LodAutoFill(this, filler, settings).start();
+        new LodAutoFill(this, cache, filler, settings).start();
         getLifecycleManager().registerEventHandler(LifecycleEvents.COMMANDS,
                 event -> event.registrar().register("lod", new LodCommand(this, cache, views, filler)));
 

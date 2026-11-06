@@ -12,7 +12,6 @@ import org.bukkit.scheduler.BukkitRunnable;
  */
 public final class PregenTask extends BukkitRunnable {
 
-    private static final int REGION_SHIFT = 5;
     private static final int REPORT_EVERY = 16384;
     private static final long CHECK_INTERVAL_TICKS = 20L;
     private static final int QUEUE_TARGET = 4096;
@@ -41,11 +40,11 @@ public final class PregenTask extends BukkitRunnable {
         maxChunkX = centerChunkX + radius;
         minChunkZ = centerChunkZ - radius;
         maxChunkZ = centerChunkZ + radius;
-        centerRegionX = centerChunkX >> REGION_SHIFT;
-        centerRegionZ = centerChunkZ >> REGION_SHIFT;
+        centerRegionX = centerChunkX >> LodWorldCache.REGION_SHIFT;
+        centerRegionZ = centerChunkZ >> LodWorldCache.REGION_SHIFT;
         regionRings = Math.max(
-                Math.max(centerRegionX - (minChunkX >> REGION_SHIFT), (maxChunkX >> REGION_SHIFT) - centerRegionX),
-                Math.max(centerRegionZ - (minChunkZ >> REGION_SHIFT), (maxChunkZ >> REGION_SHIFT) - centerRegionZ));
+                Math.max(centerRegionX - (minChunkX >> LodWorldCache.REGION_SHIFT), (maxChunkX >> LodWorldCache.REGION_SHIFT) - centerRegionX),
+                Math.max(centerRegionZ - (minChunkZ >> LodWorldCache.REGION_SHIFT), (maxChunkZ >> LodWorldCache.REGION_SHIFT) - centerRegionZ));
         long side = 2L * radius + 1;
         total = side * side;
     }
@@ -82,10 +81,10 @@ public final class PregenTask extends BukkitRunnable {
 
     // Chunks the filler already has queued or cached are counted as done right away.
     private void submitRegion(int regionX, int regionZ) {
-        int fromX = Math.max(minChunkX, regionX << REGION_SHIFT);
-        int toX = Math.min(maxChunkX, (regionX << REGION_SHIFT) + (1 << REGION_SHIFT) - 1);
-        int fromZ = Math.max(minChunkZ, regionZ << REGION_SHIFT);
-        int toZ = Math.min(maxChunkZ, (regionZ << REGION_SHIFT) + (1 << REGION_SHIFT) - 1);
+        int fromX = Math.max(minChunkX, regionX << LodWorldCache.REGION_SHIFT);
+        int toX = Math.min(maxChunkX, (regionX << LodWorldCache.REGION_SHIFT) + LodWorldCache.REGION_CHUNKS - 1);
+        int fromZ = Math.max(minChunkZ, regionZ << LodWorldCache.REGION_SHIFT);
+        int toZ = Math.min(maxChunkZ, (regionZ << LodWorldCache.REGION_SHIFT) + LodWorldCache.REGION_CHUNKS - 1);
         for (int chunkZ = fromZ; chunkZ <= toZ; chunkZ++) {
             for (int chunkX = fromX; chunkX <= toX; chunkX++) {
                 if (!filler.submit(world, chunkX, chunkZ, true, completed::incrementAndGet)) {

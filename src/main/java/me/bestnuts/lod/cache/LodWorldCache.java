@@ -32,8 +32,8 @@ import me.bestnuts.lod.encode.LodCell;
  */
 public final class LodWorldCache {
 
-    private static final int REGION_SHIFT = 5;
-    private static final int REGION_CHUNKS = 1 << REGION_SHIFT;
+    public static final int REGION_SHIFT = 5;
+    public static final int REGION_CHUNKS = 1 << REGION_SHIFT;
     private static final int FORMAT_VERSION = 7;
     private static final int SUMMARY_VERSION = 1;
     private static final int COARSE_STRIDE = 16;
