@@ -210,9 +210,11 @@ final class SharedTiles {
                 sharedTiles++;
             }
         }
-        long variants = tiles.keySet().stream().map(Key::variant).distinct().count();
+        Map<TileVariant, Long> anchorsPerVariant = tiles.keySet().stream()
+                .collect(Collectors.groupingBy(Key::variant, Collectors.counting()));
+        int splitVariants = (int) anchorsPerVariant.values().stream().filter(count -> count > 1).count();
         return new NetworkStats(world.getName(), tiles.size(), sharedTiles, maxViewers, displays, displayViews,
-                (int) variants, texts.size(), building.size(), anchors);
+                anchorsPerVariant.size(), splitVariants, texts.size(), building.size(), anchors);
     }
 
     void close() {

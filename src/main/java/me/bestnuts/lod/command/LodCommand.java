@@ -100,7 +100,7 @@ public final class LodCommand implements BasicCommand {
             sender.sendMessage(Component.text("LOD network " + stats.world() + ": " + stats.tiles() + " tile groups ("
                     + stats.sharedTiles() + " shared, max " + stats.maxViewers() + " viewers), "
                     + stats.displays() + " displays for " + stats.displayViews() + " views (" + saved + " saved, " + percent + "%)"));
-            sender.sendMessage(Component.text("  variants: " + stats.shownVariants() + " shown, " + stats.cachedVariants() + " encoded, "
+            sender.sendMessage(Component.text("  variants: " + stats.shownVariants() + " shown (" + stats.splitVariants() + " on several anchors), " + stats.cachedVariants() + " encoded, "
                     + stats.building() + " building"));
             stats.anchors().stream().limit(MAX_NETWORK_ANCHORS).forEach(anchor -> sender.sendMessage(Component.text(
                     "  anchor " + anchor.anchor().x() + ", " + anchor.anchor().z() + ": " + anchor.tiles() + " tiles, "
