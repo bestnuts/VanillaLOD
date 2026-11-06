@@ -25,4 +25,11 @@ vec2 horizonEnvironmentalFog(float horizon) {
     return fog * (horizon / FogEnvironmentalEnd);
 }
 
+// Real terrain only exists within the horizontal render distance, so clear sky fog reads its horizontal distance and
+// looking down from high above no longer fogs it out while the LOD around it stays clear. Water, lava and effect fog
+// keep the true distance.
+float horizonEnvironmentalDistance(float sphericalDistance, float horizontalDistance) {
+    return FogEnvironmentalEnd < lodAtmosphericFogMin ? sphericalDistance : horizontalDistance;
+}
+
 #endif
