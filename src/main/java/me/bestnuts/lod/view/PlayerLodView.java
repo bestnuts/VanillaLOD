@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import me.bestnuts.lod.LodSettings;
+import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.entity.Player;
@@ -23,6 +24,7 @@ final class PlayerLodView {
     private final Map<TileKey, Placement> shown = new HashMap<>();
     private final Map<TileVariant, TileKey> waiting = new HashMap<>();
     private final List<TileVariant> queue = new ArrayList<>();
+    private final Map<TileKey, Integer> holdUntil = new HashMap<>();
     private Set<TileKey> desired = Set.of();
     private TileAnchor home;
 
@@ -53,10 +55,12 @@ final class PlayerLodView {
 
         waiting.clear();
         queue.clear();
+        holdUntil.keySet().retainAll(desired);
         for (TileKey tile : desired) {
             TileVariant variant = TileVariant.of(tile, viewX, viewZ, range);
             Placement current = shown.get(tile);
             if (current != null && current.variant().equals(variant)) {
+                holdUntil.remove(tile);
                 if (current.anchor().distance(location) > shared.reanchorDistance()) {
                     place(tile, variant, location, current);
                 }
@@ -64,7 +68,9 @@ final class PlayerLodView {
             }
             shared.want(variant);
             if (shared.ready(variant)) {
-                place(tile, variant, location, current);
+                if (!held(tile, variant, current)) {
+                    place(tile, variant, location, current);
+                }
             } else {
                 waiting.put(variant, tile);
                 queue.add(variant);
@@ -82,7 +88,10 @@ final class PlayerLodView {
             return;
         }
         queue.remove(variant);
-        place(tile, variant, player.getLocation(), shown.get(tile));
+        Placement current = shown.get(tile);
+        if (!held(tile, variant, current)) {
+            place(tile, variant, player.getLocation(), current);
+        }
         retire();
         startBuilds();
     }
@@ -143,6 +152,22 @@ final class PlayerLodView {
                 budget--;
             }
         }
+    }
+
+    // When the player moves, the real terrain circle advances before the client has loaded and meshed the chunks
+    // entering it. A tile that would only hand cells over to real terrain keeps its LOD a little longer instead of
+    // flashing the void; one that must take cells back switches at once.
+    private boolean held(TileKey tile, TileVariant variant, Placement current) {
+        if (current == null || !current.variant().onlyYieldsTo(variant)) {
+            holdUntil.remove(tile);
+            return false;
+        }
+        int now = Bukkit.getCurrentTick();
+        if (now < holdUntil.computeIfAbsent(tile, ignored -> now + settings.holeDelayTicks())) {
+            return true;
+        }
+        holdUntil.remove(tile);
+        return false;
     }
 
     // The replacement is shown before the old placement is hidden, so the tile never leaves a gap for a frame.

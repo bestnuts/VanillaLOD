@@ -14,9 +14,13 @@ record TileVariant(TileKey tile, WallView wallView, Hole hole) {
     record Hole(double centerX, double centerZ, double radius, int terrainFloorY) {
 
         boolean covers(double x, double z, int surfaceY) {
+            return inside(x, z) && surfaceY > terrainFloorY;
+        }
+
+        boolean inside(double x, double z) {
             double dx = x - centerX;
             double dz = z - centerZ;
-            return dx * dx + dz * dz < radius * radius && surfaceY > terrainFloorY;
+            return dx * dx + dz * dz < radius * radius;
         }
     }
 
@@ -28,5 +32,26 @@ record TileVariant(TileKey tile, WallView wallView, Hole hole) {
 
     boolean covered(double x, double z, int surfaceY) {
         return hole != null && hole.covers(x, z, surfaceY);
+    }
+
+    /**
+     * Whether switching from this variant to the next only hands cells over to real terrain, never takes any back.
+     */
+    boolean onlyYieldsTo(TileVariant next) {
+        boolean yields = false;
+        int cellBlocks = tile.cellBlocks();
+        for (int row = 0; row < TileKey.CELLS; row++) {
+            for (int column = 0; column < TileKey.CELLS; column++) {
+                double x = tile.originX() + (column + 0.5) * cellBlocks;
+                double z = tile.originZ() + (row + 0.5) * cellBlocks;
+                boolean before = hole != null && hole.inside(x, z);
+                boolean after = next.hole != null && next.hole.inside(x, z);
+                if (before && !after) {
+                    return false;
+                }
+                yields |= after && !before;
+            }
+        }
+        return yields;
     }
 }

@@ -9,6 +9,8 @@ max-distance: 4096
 anchor-grid: 128
 update-interval-ticks: 10
 builds-per-update: 8
+# 플레이어가 움직여 실제 지형 영역이 앞으로 넓어질 때 그 자리 LOD를 지우기 전에 기다리는 틱. 청크가 로드되기 전에 공허가 보이면 늘린다.
+hole-delay-ticks: 40
 # 타일 계산 스레드 수. 0이면 CPU 코어 수의 절반(최소 2)을 쓴다.
 build-threads: 0
 pregen-parallel: 8
