@@ -30,7 +30,7 @@ vec4 calculateFinalColor(vec4 color) {
     #else
     vec4 fogColor = FogColor;
     #endif
-    return apply_fog(color, sphericalVertexDistance, cylindricalVertexDistance, FogEnvironmentalStart, FogEnvironmentalEnd, horizonFogStart(), horizonFogEnd(), fogColor);
+    return apply_fog(color, sphericalVertexDistance, cylindricalVertexDistance, FogEnvironmentalStart, FogEnvironmentalEnd, horizonFogStart(terrainHorizon()), horizonFogEnd(terrainHorizon()), fogColor);
 }
 
 void main() {

@@ -247,8 +247,9 @@ final class SharedTiles {
     private TileEntities layers(Key key, TileEntities previous, TileTexts encoded, Set<Player> viewers) {
         TileKey tile = key.variant().tile();
         Location anchor = key.anchor().location(world);
-        Transformation top = TileTransform.top(tile.level(), TileKey.CELLS, tile.originX(), tile.originZ(), anchor, cache.minY());
-        Transformation walls = TileTransform.walls(tile.level(), TileKey.CELLS, tile.originX(), tile.originZ(), anchor, cache.minY());
+        int horizonSteps = LodBits.horizonSteps(settings.maxDistance());
+        Transformation top = TileTransform.top(tile.level(), TileKey.CELLS, tile.originX(), tile.originZ(), anchor, cache.minY(), horizonSteps);
+        Transformation walls = TileTransform.walls(tile.level(), TileKey.CELLS, tile.originX(), tile.originZ(), anchor, cache.minY(), horizonSteps);
         int wallColumns = TileGlyphs.wallColumns(TileKey.CELLS);
         return new TileEntities(
                 layer(previous.top(), encoded.top(), LodBits.opacity(LodBits.KIND_TOP, tile.level()), TileKey.CELLS, top, anchor, viewers),

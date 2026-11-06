@@ -5,13 +5,13 @@ import me.bestnuts.lod.encode.LodBits;
 import org.bukkit.entity.Player;
 
 /**
- * LOD covers the ring between the chunks the client actually renders and the shared fog end.
+ * LOD covers the ring between the chunks the client actually renders and the horizon, where its fog ends.
  */
 public record LodRange(double inner, double outer) {
 
     public static LodRange of(Player player, LodSettings settings) {
         int renderDistance = Math.min(player.getSendViewDistance(), player.getClientViewDistance());
         double inner = renderDistance * 16.0;
-        return new LodRange(inner, Math.min(settings.maxDistance(), inner * LodBits.FOG_END_SCALE));
+        return new LodRange(inner, Math.max(inner, LodBits.horizon(settings.maxDistance())));
     }
 }

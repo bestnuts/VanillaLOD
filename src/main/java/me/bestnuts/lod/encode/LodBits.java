@@ -3,9 +3,11 @@ package me.bestnuts.lod.encode;
 // Must match resourcepack/assets/vanillalod/shaders/include/conf/lod_conf.glsl.
 public final class LodBits {
 
+    // Glyphs sit MARKER_OFFSET x horizon steps below their floor, so the band they fall in carries the horizon distance.
     public static final float MARKER_OFFSET = 4096.0f;
-    // Clients clip at 4x the effective render distance; the shared fog fully hides LOD at this multiple.
-    public static final double FOG_END_SCALE = 3.9;
+    public static final int HORIZON_STEP = 1024;
+    // Keeps the deepest band within float precision of a few millimetres.
+    public static final int MAX_HORIZON_STEPS = 32;
     public static final int MAX_LEVEL = 7;
     public static final int MAX_HEIGHT = 510;
     public static final int MAX_WALL_DEPTH_STEPS = 31;
@@ -37,6 +39,14 @@ public final class LodBits {
     private static final int TINT_GREEN_LEVELS = 7;
     private static final int TINT_BLUE_LEVELS = 6;
     private static final int WALL_TINT_LEVELS = 4;
+
+    public static int horizonSteps(int maxDistance) {
+        return Math.clamp(Math.ceilDiv(maxDistance, HORIZON_STEP), 1, MAX_HORIZON_STEPS);
+    }
+
+    public static int horizon(int maxDistance) {
+        return horizonSteps(maxDistance) * HORIZON_STEP;
+    }
 
     private LodBits() {
     }

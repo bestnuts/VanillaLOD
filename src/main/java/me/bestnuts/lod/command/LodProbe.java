@@ -23,6 +23,7 @@ final class LodProbe {
 
     private static final int SIZE = 4;
     private static final int LEVEL = 0;
+    private static final int HORIZON_STEPS = 1;
     private static final long LIFETIME_TICKS = 20L * 60L;
     private static final int GRASS_TINT = 0x91BD59;
     private static final List<Key> SPRITES = List.of(
@@ -52,9 +53,9 @@ final class LodProbe {
         int originX = feet.getBlockX() + 3;
         int originZ = feet.getBlockZ() - 2;
         TextDisplay markedTops = TileDisplays.spawn(anchor, LodBits.opacity(LodBits.KIND_TOP, LEVEL), SIZE,
-                TileTransform.top(LEVEL, SIZE, originX, originZ, anchor, feet.getBlockY()), tops);
+                TileTransform.top(LEVEL, SIZE, originX, originZ, anchor, feet.getBlockY(), HORIZON_STEPS), tops);
         TextDisplay markedWalls = TileDisplays.spawn(anchor, LodBits.opacity(LodBits.KIND_WALL, LEVEL), TileGlyphs.wallColumns(SIZE),
-                TileTransform.walls(LEVEL, SIZE, originX, originZ, anchor, feet.getBlockY()), walls);
+                TileTransform.walls(LEVEL, SIZE, originX, originZ, anchor, feet.getBlockY(), HORIZON_STEPS), walls);
 
         for (TextDisplay display : List.of(raw, markedTops, markedWalls)) {
             player.showEntity(plugin, display);

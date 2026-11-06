@@ -24,6 +24,7 @@ layout(location = 1) out float cylindricalVertexDistance;
 layout(location = 4) out vec2 ls_cellQuad;
 layout(location = 5) flat out float cellBlockSize;
 layout(location = 6) out vec2 ls_texBlocks;
+layout(location = 7) flat out float cellHorizon;
 #endif
 
 layout(location = 2) out vec4 vertexColor;
@@ -36,7 +37,9 @@ void main() {
     ls_cellQuad = vec2(0.0f);
     ls_texBlocks = vec2(0.0f);
     cellBlockSize = 0.0f;
+    cellHorizon = 0.0f;
     vec4 color = Color;
+    vec3 ws_depthPosition = ws_position;
 
     if (cellIsMarked(Position)) {
         int packed = cellPacked(Color);
@@ -45,10 +48,12 @@ void main() {
             return;
         }
 
+        float horizonSteps = cellHorizonSteps(Position);
+        vec3 ws_marked = cellFirstBand(Position, horizonSteps);
         int opacity = cellOpacity(Color);
         float blocks = cellBlocks(opacity);
-        vec2 corner = cellCorner(Position, blocks);
-        vec3 ws_origin = cellOrigin(Position, corner, blocks);
+        vec2 corner = cellCorner(ws_marked, blocks);
+        vec3 ws_origin = cellOrigin(ws_marked, corner, blocks);
 
         int kind = cellKind(opacity);
         CellVertex cell;
@@ -64,11 +69,12 @@ void main() {
         ls_cellQuad = corner;
         ls_texBlocks = cell.ls_texBlocks;
         cellBlockSize = blocks;
+        cellHorizon = horizonSteps * lodHorizonStep;
         color = vec4(cell.tint, 1.0f);
+        ws_depthPosition = cellDepthPosition(ws_position, cellHorizon);
     }
 
-    float depthScale = cellBlockSize > 0.0f ? 1.0f + lodDepthPush : 1.0f;
-    gl_Position = ProjMat * ModelViewMat * vec4(ws_position * depthScale, 1.0f);
+    gl_Position = ProjMat * ModelViewMat * vec4(ws_depthPosition, 1.0f);
     sphericalVertexDistance = fog_spherical_distance(ws_position);
     cylindricalVertexDistance = fog_cylindrical_distance(ws_position);
     vertexColor = color * sample_lightmap(Sampler2, UV2);

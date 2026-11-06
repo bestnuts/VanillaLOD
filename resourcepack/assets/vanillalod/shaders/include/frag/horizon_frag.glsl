@@ -4,12 +4,16 @@
 #include <minecraft:fog.glsl>
 #include <vanillalod:conf/lod_conf.glsl>
 
-float horizonFogStart() {
-    return FogRenderDistanceEnd * lodFogStartScale;
+float terrainHorizon() {
+    return FogRenderDistanceEnd * lodTerrainFogEndScale;
 }
 
-float horizonFogEnd() {
-    return FogRenderDistanceEnd * lodFogEndScale;
+float horizonFogStart(float horizon) {
+    return horizon * lodFogStartFraction;
+}
+
+float horizonFogEnd(float horizon) {
+    return horizon;
 }
 
 #endif

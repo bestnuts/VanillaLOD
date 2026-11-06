@@ -2,8 +2,10 @@
 #define VANILLALOD_LOD_CONF_GLSL
 
 // Must match me.bestnuts.lod.encode.LodBits.
+// Glyphs sit lodMarkerOffset x horizon steps below their floor, so the band they fall in carries the horizon distance.
 const float lodMarkerOffset = 4096.0f;
 const float lodDetectY = -2048.0f;
+const float lodHorizonStep = 1024.0f;
 
 const int lodLevelMask = 0x7;
 const int lodKindShift = 3;
@@ -48,10 +50,15 @@ const float lodWallXShade = 0.6f;
 const float lodWallZShade = 0.8f;
 const float lodBottomShade = 0.5f;
 
-// Terrain and LOD share one render distance fog stretched towards the 4x far plane.
-// lodFogEndScale must match me.bestnuts.lod.encode.LodBits.FOG_END_SCALE.
-const float lodFogStartScale = 2.0f;
-const float lodFogEndScale = 3.9f;
+// LOD fog ends at the horizon and starts halfway there. Real terrain keeps a fog stretched towards the 4x far plane,
+// which only starts past its own edge.
+const float lodFogStartFraction = 0.5f;
+const float lodTerrainFogEndScale = 3.9f;
+
+// Vanilla clips at 4x the render distance. LOD past lodDepthKeepScale x render distance is squeezed linearly so the
+// horizon lands at lodDepthLimitScale x render distance.
+const float lodDepthKeepScale = 1.5f;
+const float lodDepthLimitScale = 3.8f;
 
 // Pushes LOD vertices slightly back along the view ray so overlapping real terrain always wins the depth test.
 const float lodDepthPush = 0.004f;

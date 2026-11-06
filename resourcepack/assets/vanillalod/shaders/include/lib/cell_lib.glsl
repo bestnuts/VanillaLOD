@@ -1,6 +1,7 @@
 #ifndef VANILLALOD_CELL_LIB_GLSL
 #define VANILLALOD_CELL_LIB_GLSL
 
+#include <minecraft:fog.glsl>
 #include <minecraft:globals.glsl>
 #include <vanillalod:conf/lod_conf.glsl>
 
@@ -12,6 +13,30 @@ struct CellVertex {
 
 bool cellIsMarked(vec3 ws_position) {
     return ws_position.y < lodDetectY;
+}
+
+// The floor stays within 2048 blocks of the camera, so the band index is the nearest whole marker offset.
+float cellHorizonSteps(vec3 ws_position) {
+    return round(-ws_position.y / lodMarkerOffset);
+}
+
+// Moves a glyph to the first band, where the vertex functions expect it.
+vec3 cellFirstBand(vec3 ws_position, float horizonSteps) {
+    return ws_position + vec3(0.0f, (horizonSteps - 1.0f) * lodMarkerOffset, 0.0f);
+}
+
+// Scaling along the view ray keeps the screen position and only changes depth.
+vec3 cellDepthPosition(vec3 ws_position, float horizon) {
+    float renderDistance = max(FogRenderDistanceEnd, 16.0f);
+    float keep = renderDistance * lodDepthKeepScale;
+    float limit = renderDistance * lodDepthLimitScale;
+    float rayLength = length(ws_position);
+    float pushed = rayLength * (1.0f + lodDepthPush);
+    if (pushed <= keep || horizon <= limit) {
+        return ws_position * (1.0f + lodDepthPush);
+    }
+    float squeezed = min(keep + (pushed - keep) * (limit - keep) / (horizon - keep), limit);
+    return ws_position * (squeezed / rayLength);
 }
 
 int cellPacked(vec4 color) {

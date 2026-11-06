@@ -19,6 +19,7 @@ layout(location = 1) in float cylindricalVertexDistance;
 layout(location = 4) in vec2 ls_cellQuad;
 layout(location = 5) flat in float cellBlockSize;
 layout(location = 6) in vec2 ls_texBlocks;
+layout(location = 7) flat in float cellHorizon;
 #endif
 
 layout(location = 2) in vec4 vertexColor;
@@ -44,8 +45,8 @@ vec4 calculateFinalColor(vec4 color) {
     float renderDistanceStart = FogRenderDistanceStart;
     float renderDistanceEnd = FogRenderDistanceEnd;
     if (cellBlockSize > 0.0f) {
-        renderDistanceStart = horizonFogStart();
-        renderDistanceEnd = horizonFogEnd();
+        renderDistanceStart = horizonFogStart(cellHorizon);
+        renderDistanceEnd = horizonFogEnd(cellHorizon);
     }
 
     color = apply_fog(color, sphericalVertexDistance, cylindricalVertexDistance, FogEnvironmentalStart, FogEnvironmentalEnd, renderDistanceStart, renderDistanceEnd, fogColor);
