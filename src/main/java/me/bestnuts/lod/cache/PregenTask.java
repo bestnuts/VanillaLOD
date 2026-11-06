@@ -1,47 +1,75 @@
 package me.bestnuts.lod.cache;
 
-import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
 import org.bukkit.World;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.scheduler.BukkitRunnable;
 
+/**
+ * Fills a square of chunks one region at a time, nearest regions first. Regions keep the cache's full resolution loaded
+ * only while they fill, and topping the filler up each second keeps the queue small however large the square is.
+ */
 public final class PregenTask extends BukkitRunnable {
 
-    private static final int REPORT_EVERY = 1024;
+    private static final int REGION_SHIFT = 5;
+    private static final int REPORT_EVERY = 16384;
     private static final long CHECK_INTERVAL_TICKS = 20L;
+    private static final int QUEUE_TARGET = 4096;
 
+    private final World world;
+    private final ChunkFiller filler;
     private final Consumer<String> progress;
-    private final AtomicInteger completed = new AtomicInteger();
-    private final int total;
-    private int reported;
+    private final int minChunkX;
+    private final int maxChunkX;
+    private final int minChunkZ;
+    private final int maxChunkZ;
+    private final int centerRegionX;
+    private final int centerRegionZ;
+    private final int regionRings;
+    private final long total;
+    private final AtomicLong completed = new AtomicLong();
+    private int ring;
+    private int step;
+    private long reported;
 
     public PregenTask(World world, int centerChunkX, int centerChunkZ, int radius, ChunkFiller filler, Consumer<String> progress) {
+        this.world = world;
+        this.filler = filler;
         this.progress = progress;
-        int submitted = 0;
-        for (int ring = 0; ring <= radius; ring++) {
-            for (int step = 0; step < Math.max(1, ring * 8); step++) {
-                int[] offset = ringOffset(ring, step);
-                if (filler.submit(world, centerChunkX + offset[0], centerChunkZ + offset[1], true, completed::incrementAndGet)) {
-                    submitted++;
-                }
-            }
-        }
-        this.total = submitted;
+        minChunkX = centerChunkX - radius;
+        maxChunkX = centerChunkX + radius;
+        minChunkZ = centerChunkZ - radius;
+        maxChunkZ = centerChunkZ + radius;
+        centerRegionX = centerChunkX >> REGION_SHIFT;
+        centerRegionZ = centerChunkZ >> REGION_SHIFT;
+        regionRings = Math.max(
+                Math.max(centerRegionX - (minChunkX >> REGION_SHIFT), (maxChunkX >> REGION_SHIFT) - centerRegionX),
+                Math.max(centerRegionZ - (minChunkZ >> REGION_SHIFT), (maxChunkZ >> REGION_SHIFT) - centerRegionZ));
+        long side = 2L * radius + 1;
+        total = side * side;
     }
 
-    public int total() {
+    public long total() {
         return total;
     }
 
     public void start(Plugin plugin) {
-        runTaskTimer(plugin, CHECK_INTERVAL_TICKS, CHECK_INTERVAL_TICKS);
+        runTaskTimer(plugin, 1L, CHECK_INTERVAL_TICKS);
     }
 
     @Override
     public void run() {
-        int done = completed.get();
-        if (done >= total) {
+        while (ring <= regionRings && filler.queued() < QUEUE_TARGET) {
+            int[] offset = ringOffset(ring, step);
+            submitRegion(centerRegionX + offset[0], centerRegionZ + offset[1]);
+            if (++step >= Math.max(1, ring * 8)) {
+                ring++;
+                step = 0;
+            }
+        }
+        long done = completed.get();
+        if (ring > regionRings && done >= total) {
             progress.accept("done " + total);
             cancel();
             return;
@@ -49,6 +77,21 @@ public final class PregenTask extends BukkitRunnable {
         if (done / REPORT_EVERY > reported) {
             reported = done / REPORT_EVERY;
             progress.accept(done + "/" + total);
+        }
+    }
+
+    // Chunks the filler already has queued or cached are counted as done right away.
+    private void submitRegion(int regionX, int regionZ) {
+        int fromX = Math.max(minChunkX, regionX << REGION_SHIFT);
+        int toX = Math.min(maxChunkX, (regionX << REGION_SHIFT) + (1 << REGION_SHIFT) - 1);
+        int fromZ = Math.max(minChunkZ, regionZ << REGION_SHIFT);
+        int toZ = Math.min(maxChunkZ, (regionZ << REGION_SHIFT) + (1 << REGION_SHIFT) - 1);
+        for (int chunkZ = fromZ; chunkZ <= toZ; chunkZ++) {
+            for (int chunkX = fromX; chunkX <= toX; chunkX++) {
+                if (!filler.submit(world, chunkX, chunkZ, true, completed::incrementAndGet)) {
+                    completed.incrementAndGet();
+                }
+            }
         }
     }
 
