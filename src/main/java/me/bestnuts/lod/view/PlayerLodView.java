@@ -136,6 +136,10 @@ final class PlayerLodView {
         if (next.equals(current)) {
             return;
         }
+        if (current != null && current.variant().equals(variant) && shared.move(player, current.anchor(), next.anchor(), variant)) {
+            shown.put(tile, next);
+            return;
+        }
         shared.show(player, next.anchor(), variant);
         if (current != null) {
             hide(current);

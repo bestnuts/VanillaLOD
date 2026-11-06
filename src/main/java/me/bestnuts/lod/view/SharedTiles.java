@@ -126,6 +126,29 @@ final class SharedTiles {
         }
     }
 
+    // A tile only this player watches keeps its displays and is re-posed at the new anchor; respawning hundreds of
+    // displays at once when a player crosses the anchor range would hitch the client.
+    boolean move(Player player, TileAnchor from, TileAnchor to, TileVariant variant) {
+        Key source = new Key(from, variant);
+        Key target = new Key(to, variant);
+        Shared shared = tiles.get(source);
+        if (shared == null || tiles.containsKey(target) || shared.viewers.size() != 1 || !shared.viewers.contains(player)) {
+            return false;
+        }
+        tiles.remove(source);
+        Location anchor = to.location(world);
+        Transformation top = topPose(target, anchor);
+        Transformation walls = wallPose(target, anchor);
+        TileEntities entities = shared.entities;
+        entities.displays().forEach(display -> display.teleport(anchor));
+        pose(entities.top(), top);
+        pose(entities.walls(), walls);
+        pose(entities.underWalls(), walls);
+        pose(entities.bottom(), top);
+        tiles.put(target, shared);
+        return true;
+    }
+
     void hide(Player player, TileAnchor anchor, TileVariant variant) {
         Key key = new Key(anchor, variant);
         Shared shared = tiles.get(key);
@@ -247,15 +270,32 @@ final class SharedTiles {
     private TileEntities layers(Key key, TileEntities previous, TileTexts encoded, Set<Player> viewers) {
         TileKey tile = key.variant().tile();
         Location anchor = key.anchor().location(world);
-        int horizonSteps = LodBits.horizonSteps(settings.maxDistance());
-        Transformation top = TileTransform.top(tile.level(), TileKey.CELLS, tile.originX(), tile.originZ(), anchor, cache.minY(), horizonSteps);
-        Transformation walls = TileTransform.walls(tile.level(), TileKey.CELLS, tile.originX(), tile.originZ(), anchor, cache.minY(), horizonSteps);
+        Transformation top = topPose(key, anchor);
+        Transformation walls = wallPose(key, anchor);
         int wallColumns = TileGlyphs.wallColumns(TileKey.CELLS);
         return new TileEntities(
                 layer(previous.top(), encoded.top(), LodBits.opacity(LodBits.KIND_TOP, tile.level()), TileKey.CELLS, top, anchor, viewers),
                 layer(previous.walls(), encoded.walls(), LodBits.opacity(LodBits.KIND_WALL, tile.level()), wallColumns, walls, anchor, viewers),
                 layer(previous.underWalls(), encoded.underWalls(), LodBits.opacity(LodBits.KIND_UNDER_WALL, tile.level()), wallColumns, walls, anchor, viewers),
                 layer(previous.bottom(), encoded.bottom(), LodBits.opacity(LodBits.KIND_BOTTOM, tile.level()), TileKey.CELLS, top, anchor, viewers));
+    }
+
+    private Transformation topPose(Key key, Location anchor) {
+        TileKey tile = key.variant().tile();
+        return TileTransform.top(tile.level(), TileKey.CELLS, tile.originX(), tile.originZ(), anchor, cache.minY(),
+                LodBits.horizonSteps(settings.maxDistance()));
+    }
+
+    private Transformation wallPose(Key key, Location anchor) {
+        TileKey tile = key.variant().tile();
+        return TileTransform.walls(tile.level(), TileKey.CELLS, tile.originX(), tile.originZ(), anchor, cache.minY(),
+                LodBits.horizonSteps(settings.maxDistance()));
+    }
+
+    private static void pose(TextDisplay display, Transformation transformation) {
+        if (display != null) {
+            display.setTransformation(transformation);
+        }
     }
 
     private TextDisplay layer(TextDisplay current, Component text, byte opacity, int columns, Transformation transformation,
