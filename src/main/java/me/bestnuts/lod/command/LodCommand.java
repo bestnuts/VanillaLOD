@@ -74,7 +74,8 @@ public final class LodCommand implements BasicCommand {
         }
         player.sendMessage(Component.text("LOD cache: " + cache.world(player.getWorld()).size() + " chunks, filler queue " + filler.queued()));
         views.stats(player).ifPresentOrElse(
-                stats -> player.sendMessage(Component.text("LOD view: " + stats.tiles() + " tiles, " + stats.displays() + " displays, "
+                stats -> player.sendMessage(Component.text("LOD view: " + stats.tiles() + " tiles (" + stats.sharedTiles() + " shared), "
+                        + stats.displays() + " displays, "
                         + stats.topGlyphs() + " top glyphs, " + stats.wallGlyphs() + " wall glyphs, " + stats.bottomGlyphs() + " bottom glyphs, "
                         + stats.pendingBuilds() + " pending builds")),
                 () -> player.sendMessage(Component.text("LOD view: off")));

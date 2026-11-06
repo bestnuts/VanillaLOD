@@ -2,14 +2,14 @@ package me.bestnuts.lod.view;
 
 import java.util.List;
 import java.util.stream.Stream;
-import me.bestnuts.lod.encode.WallView;
 import org.bukkit.entity.TextDisplay;
 
 /**
  * Displays of one tile; a layer without any glyph has no display at all.
  */
-record TileEntities(TextDisplay top, TextDisplay walls, TextDisplay underWalls, TextDisplay bottom,
-                    int topGlyphs, int wallGlyphs, int bottomGlyphs, WallView wallView) {
+record TileEntities(TextDisplay top, TextDisplay walls, TextDisplay underWalls, TextDisplay bottom) {
+
+    static final TileEntities EMPTY = new TileEntities(null, null, null, null);
 
     List<TextDisplay> displays() {
         return Stream.of(top, walls, underWalls, bottom).filter(display -> display != null).toList();

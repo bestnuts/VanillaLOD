@@ -30,6 +30,7 @@ public final class LodViewService implements LodCache.Listener, Listener {
     private final LodSettings settings;
     private final ExecutorService builder = Executors.newFixedThreadPool(2, Thread.ofPlatform().name("VanillaLOD-build-", 0).daemon().factory());
     private final Map<UUID, PlayerLodView> views = new HashMap<>();
+    private final Map<UUID, SharedTiles> worlds = new HashMap<>();
     private final Set<UUID> disabledPlayers = new HashSet<>();
     private final Queue<CachedChunk> cachedChunks = new ConcurrentLinkedQueue<>();
     private BukkitTask task;
@@ -63,6 +64,8 @@ public final class LodViewService implements LodCache.Listener, Listener {
         }
         views.values().forEach(PlayerLodView::close);
         views.clear();
+        worlds.values().forEach(SharedTiles::close);
+        worlds.clear();
         builder.shutdownNow();
     }
 
@@ -82,6 +85,7 @@ public final class LodViewService implements LodCache.Listener, Listener {
         for (CachedChunk chunk; (chunk = cachedChunks.poll()) != null; ) {
             changed.computeIfAbsent(chunk.world(), id -> new HashSet<>()).add(chunk.chunk());
         }
+        worlds.forEach((world, tiles) -> tiles.chunksChanged(changed.getOrDefault(world, Set.of())));
 
         for (Player player : plugin.getServer().getOnlinePlayers()) {
             if (disabledPlayers.contains(player.getUniqueId())) {
@@ -96,11 +100,15 @@ public final class LodViewService implements LodCache.Listener, Listener {
                 continue;
             }
             if (view == null) {
-                view = new PlayerLodView(plugin, player, cache.world(player.getWorld()), settings, builder);
+                World world = player.getWorld();
+                SharedTiles tiles = worlds.computeIfAbsent(world.getUID(),
+                        id -> new SharedTiles(plugin, world, cache.world(world), settings, builder));
+                view = new PlayerLodView(player, tiles, settings);
                 views.put(player.getUniqueId(), view);
             }
-            view.update(changed.getOrDefault(player.getWorld().getUID(), Set.of()));
+            view.update();
         }
+        worlds.values().forEach(SharedTiles::endTick);
     }
 
     private void close(UUID player) {

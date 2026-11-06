@@ -23,8 +23,12 @@ public record TileKey(int level, int tileX, int tileZ) {
     }
 
     public double nearestDistance(double x, double z) {
-        double dx = Math.max(Math.max(originX() - x, 0.0), x - (originX() + blocks()));
-        double dz = Math.max(Math.max(originZ() - z, 0.0), z - (originZ() + blocks()));
+        return nearestDistance(x, z, 0.0);
+    }
+
+    public double nearestDistance(double x, double z, double margin) {
+        double dx = Math.max(Math.max(originX() - margin - x, 0.0), x - (originX() + blocks() + margin));
+        double dz = Math.max(Math.max(originZ() - margin - z, 0.0), z - (originZ() + blocks() + margin));
         return Math.hypot(dx, dz);
     }
 
