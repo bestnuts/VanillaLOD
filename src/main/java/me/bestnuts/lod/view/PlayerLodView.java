@@ -13,12 +13,15 @@ import org.bukkit.entity.Player;
 
 final class PlayerLodView {
 
+    private record Placement(TileAnchor anchor, TileVariant variant) {
+    }
+
     private final Player player;
     private final World world;
     private final SharedTiles shared;
     private final LodSettings settings;
-    private final Map<TileKey, TileVariant> shown = new HashMap<>();
-    private TileAnchor anchor;
+    private final Map<TileKey, Placement> shown = new HashMap<>();
+    private TileAnchor home;
     private int pending;
 
     PlayerLodView(Player player, SharedTiles shared, LodSettings settings) {
@@ -34,8 +37,8 @@ final class PlayerLodView {
 
     void update() {
         Location location = player.getLocation();
-        if (anchor == null || anchor.distance(location) > shared.reanchorDistance()) {
-            reanchor(shared.anchorFor(location));
+        if (home == null || home.distance(location) > shared.reanchorDistance()) {
+            home = shared.anchorFor(location);
         }
 
         // Selection, holes and wall facings follow the chunk centre, as the client's render distance does,
@@ -49,24 +52,23 @@ final class PlayerLodView {
             if (desired.contains(entry.getKey())) {
                 return false;
             }
-            shared.hide(player, anchor, entry.getValue());
+            hide(entry.getValue());
             return true;
         });
 
         List<TileVariant> missing = new ArrayList<>();
         for (TileKey tile : desired) {
             TileVariant variant = TileVariant.of(tile, viewX, viewZ, range.inner());
-            TileVariant current = shown.get(tile);
-            if (variant.equals(current)) {
+            Placement current = shown.get(tile);
+            if (current != null && current.variant().equals(variant)) {
+                if (current.anchor().distance(location) > shared.reanchorDistance()) {
+                    place(tile, variant, location, current);
+                }
                 continue;
             }
             shared.want(variant);
             if (shared.ready(variant)) {
-                shared.show(player, anchor, variant);
-                if (current != null) {
-                    shared.hide(player, anchor, current);
-                }
-                shown.put(tile, variant);
+                place(tile, variant, location, current);
             } else {
                 missing.add(variant);
             }
@@ -92,12 +94,12 @@ final class PlayerLodView {
         int topGlyphs = 0;
         int wallGlyphs = 0;
         int bottomGlyphs = 0;
-        for (TileVariant variant : shown.values()) {
-            if (shared.viewers(anchor, variant) > 1) {
+        for (Placement placement : shown.values()) {
+            if (shared.viewers(placement.anchor(), placement.variant()) > 1) {
                 sharedTiles++;
             }
-            displays += shared.entities(anchor, variant).displays().size();
-            TileTexts texts = shared.texts(variant);
+            displays += shared.entities(placement.anchor(), placement.variant()).displays().size();
+            TileTexts texts = shared.texts(placement.variant());
             topGlyphs += texts.topGlyphs();
             wallGlyphs += texts.wallGlyphs();
             bottomGlyphs += texts.bottomGlyphs();
@@ -106,20 +108,24 @@ final class PlayerLodView {
     }
 
     void close() {
-        shown.values().forEach(variant -> shared.hide(player, anchor, variant));
+        shown.values().forEach(this::hide);
         shown.clear();
     }
 
-    // Shown variants stay encoded while displayed, so moving them only spawns (or joins) displays at the new anchor.
-    private void reanchor(TileAnchor next) {
-        if (next.equals(anchor)) {
+    // The replacement is shown before the old placement is hidden, so the tile never leaves a gap for a frame.
+    private void place(TileKey tile, TileVariant variant, Location location, Placement current) {
+        Placement next = new Placement(shared.placementFor(variant, location, home), variant);
+        if (next.equals(current)) {
             return;
         }
-        TileAnchor previous = anchor;
-        anchor = next;
-        shown.values().forEach(variant -> {
-            shared.show(player, next, variant);
-            shared.hide(player, previous, variant);
-        });
+        shared.show(player, next.anchor(), variant);
+        if (current != null) {
+            hide(current);
+        }
+        shown.put(tile, next);
+    }
+
+    private void hide(Placement placement) {
+        shared.hide(player, placement.anchor(), placement.variant());
     }
 }

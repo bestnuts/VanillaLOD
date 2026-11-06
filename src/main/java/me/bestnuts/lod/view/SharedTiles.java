@@ -7,11 +7,13 @@ import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import me.bestnuts.lod.LodSettings;
 import me.bestnuts.lod.cache.LodWorldCache;
 import me.bestnuts.lod.encode.LodBits;
@@ -65,18 +67,24 @@ final class SharedTiles {
         return anchorGrid() * REANCHOR_FRACTION;
     }
 
-    // Prefers an anchor other players already stand on, so nearby players in different grid cells still share displays.
-    // Every candidate is a multiple of every cell size apart, so a frame that sees the new position with the old translation keeps its glyph corners.
+    // Prefers an anchor other players already stand on, so tiles spawned here are the ones nearby players can join.
     TileAnchor anchorFor(Location location) {
         int grid = anchorGrid();
         TileAnchor own = new TileAnchor(
                 Math.floorDiv(location.getBlockX(), grid) * grid + grid / 2,
                 Math.floorDiv(location.getBlockZ(), grid) * grid + grid / 2);
-        return tiles.keySet().stream()
-                .map(Key::anchor)
+        return nearest(tiles.keySet().stream().map(Key::anchor), location).orElse(own);
+    }
+
+    // Any anchor within tracking range works for a single tile, so a variant already spawned nearby is joined instead of spawned again.
+    TileAnchor placementFor(TileVariant variant, Location location, TileAnchor home) {
+        return nearest(tiles.keySet().stream().filter(key -> key.variant().equals(variant)).map(Key::anchor), location).orElse(home);
+    }
+
+    private Optional<TileAnchor> nearest(Stream<TileAnchor> anchors, Location location) {
+        return anchors
                 .filter(anchor -> anchor.distance(location) < reanchorDistance())
-                .min(Comparator.comparingDouble(anchor -> anchor.distance(location)))
-                .orElse(own);
+                .min(Comparator.comparingDouble(anchor -> anchor.distance(location)));
     }
 
     boolean ready(TileVariant variant) {
