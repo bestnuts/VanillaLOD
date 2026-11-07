@@ -7,6 +7,7 @@ import java.security.MessageDigest
 
 plugins {
     java
+    `maven-publish`
 }
 
 group = "me.bestnuts"
@@ -30,6 +31,15 @@ java {
 tasks.withType<JavaCompile>().configureEach {
     options.encoding = "UTF-8"
     options.release = 25
+}
+
+publishing {
+    publications {
+        create<MavenPublication>("plugin") {
+            artifactId = "vanillalod"
+            from(components["java"])
+        }
+    }
 }
 
 tasks.processResources {
