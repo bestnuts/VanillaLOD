@@ -18,6 +18,7 @@ public final class VanillaLodPlugin extends JavaPlugin {
 
     private LodCache cache;
     private LodViewService views;
+    private LodCommand command;
 
     @Override
     public void onEnable() {
@@ -37,8 +38,8 @@ public final class VanillaLodPlugin extends JavaPlugin {
         ChunkFiller filler = new ChunkFiller(cache, settings.pregenParallel());
         filler.start(this);
         new LodAutoFill(this, cache, filler, settings).start();
-        getLifecycleManager().registerEventHandler(LifecycleEvents.COMMANDS,
-                event -> event.registrar().register("lod", new LodCommand(this, cache, views, filler)));
+        command = new LodCommand(this, cache, views, filler);
+        getLifecycleManager().registerEventHandler(LifecycleEvents.COMMANDS, event -> event.registrar().register("lod", command));
         getServer().getServicesManager().register(LodRenderApi.class, views, this, ServicePriority.Normal);
 
         long saveInterval = settings.saveIntervalMinutes() * TICKS_PER_MINUTE;
@@ -48,6 +49,9 @@ public final class VanillaLodPlugin extends JavaPlugin {
 
     @Override
     public void onDisable() {
+        if (command != null) {
+            command.shutdown();
+        }
         if (views != null) {
             views.shutdown();
         }

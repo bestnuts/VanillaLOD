@@ -14,29 +14,33 @@ import org.bukkit.Location;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.Plugin;
+import org.joml.Vector3d;
 
 public final class LodCommand implements BasicCommand {
 
     // 2048 chunks reach the deepest horizon band, 32768 blocks.
     private static final int MAX_PREGEN_RADIUS = 2048;
     private static final int MAX_NETWORK_ANCHORS = 8;
+    private static final float DEFAULT_MARKER_SIZE = 8.0f;
 
     private final Plugin plugin;
     private final LodCache cache;
     private final LodViewService views;
     private final ChunkFiller filler;
+    private final ProxyMarkers markers;
 
     public LodCommand(Plugin plugin, LodCache cache, LodViewService views, ChunkFiller filler) {
         this.plugin = plugin;
         this.cache = cache;
         this.views = views;
         this.filler = filler;
+        this.markers = new ProxyMarkers(plugin, views);
     }
 
     @Override
     public void execute(CommandSourceStack source, String[] args) {
         if (args.length == 0) {
-            source.getSender().sendMessage(Component.text("/lod toggle | /lod pregen <radius chunks> | /lod save | /lod probe | /lod stats | /lod network"));
+            source.getSender().sendMessage(Component.text("/lod toggle | /lod pregen <radius chunks> | /lod save | /lod probe | /lod stats | /lod network | /lod marker <x> <y> <z> [size] | /lod marker clear"));
             return;
         }
         switch (args[0]) {
@@ -45,6 +49,7 @@ public final class LodCommand implements BasicCommand {
             case "probe" -> probe(source);
             case "stats" -> stats(source);
             case "network" -> network(source);
+            case "marker" -> marker(source, args);
             case "save" -> {
                 cache.saveAll();
                 source.getSender().sendMessage(Component.text("LOD cache saved"));
@@ -55,7 +60,7 @@ public final class LodCommand implements BasicCommand {
 
     @Override
     public Collection<String> suggest(CommandSourceStack source, String[] args) {
-        return args.length <= 1 ? List.of("toggle", "pregen", "save", "probe", "stats", "network") : List.of();
+        return args.length <= 1 ? List.of("toggle", "pregen", "save", "probe", "stats", "network", "marker") : List.of();
     }
 
     @Override
@@ -109,6 +114,39 @@ public final class LodCommand implements BasicCommand {
             if (stats.anchors().size() > MAX_NETWORK_ANCHORS) {
                 sender.sendMessage(Component.text("  ... " + (stats.anchors().size() - MAX_NETWORK_ANCHORS) + " more anchors"));
             }
+        }
+    }
+
+    public void shutdown() {
+        markers.shutdown();
+    }
+
+    private void marker(CommandSourceStack source, String[] args) {
+        if (!(source.getSender() instanceof Player player)) {
+            source.getSender().sendMessage(Component.text("Players only"));
+            return;
+        }
+        if (args.length == 2 && args[1].equals("clear")) {
+            player.sendMessage(Component.text("Removed " + markers.clear(player) + " LOD markers"));
+            return;
+        }
+        if (args.length < 4) {
+            player.sendMessage(Component.text("/lod marker <x> <y> <z> [size] | /lod marker clear"));
+            return;
+        }
+        Vector3d origin;
+        float size;
+        try {
+            origin = new Vector3d(Double.parseDouble(args[1]), Double.parseDouble(args[2]), Double.parseDouble(args[3]));
+            size = args.length > 4 ? Float.parseFloat(args[4]) : DEFAULT_MARKER_SIZE;
+        } catch (NumberFormatException e) {
+            player.sendMessage(Component.text("Coordinates and size must be numbers"));
+            return;
+        }
+        if (markers.add(player, origin, size)) {
+            player.sendMessage(Component.text("LOD marker at " + args[1] + " " + args[2] + " " + args[3]));
+        } else {
+            player.sendMessage(Component.text("LOD is not active for you here"));
         }
     }
 
