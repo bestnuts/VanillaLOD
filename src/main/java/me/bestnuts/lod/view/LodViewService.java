@@ -12,7 +12,11 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import me.bestnuts.lod.LodSettings;
+import me.bestnuts.lod.api.LodProjection;
+import me.bestnuts.lod.api.LodRenderApi;
+import me.bestnuts.lod.encode.LodBits;
 import me.bestnuts.lod.cache.LodCache;
+import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -20,8 +24,9 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.scheduler.BukkitTask;
+import org.joml.Vector3d;
 
-public final class LodViewService implements LodCache.Listener, Listener {
+public final class LodViewService implements LodCache.Listener, Listener, LodRenderApi {
 
     private record CachedChunk(UUID world, long chunk) {
     }
@@ -58,6 +63,20 @@ public final class LodViewService implements LodCache.Listener, Listener {
 
     public List<NetworkStats> network() {
         return worlds.values().stream().map(SharedTiles::network).toList();
+    }
+
+    @Override
+    public Optional<LodProjection> projection(Player viewer) {
+        PlayerLodView view = views.get(viewer.getUniqueId());
+        if (view == null || view.home() == null || !view.world().equals(viewer.getWorld())) {
+            return Optional.empty();
+        }
+        World world = view.world();
+        Location eye = viewer.getEyeLocation();
+        Location anchor = view.home().location(world);
+        int renderDistance = LodRange.renderDistanceChunks(viewer) * 16;
+        return Optional.of(new ViewerProjection(world, new Vector3d(eye.getX(), eye.getY(), eye.getZ()), renderDistance,
+                LodBits.horizonSteps(settings.maxDistance()), new Vector3d(anchor.getX(), anchor.getY(), anchor.getZ())));
     }
 
     public boolean toggle(Player player) {

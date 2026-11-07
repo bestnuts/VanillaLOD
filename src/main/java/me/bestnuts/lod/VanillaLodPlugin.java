@@ -5,9 +5,11 @@ import me.bestnuts.lod.cache.ChunkCaptureListener;
 import me.bestnuts.lod.cache.ChunkFiller;
 import me.bestnuts.lod.cache.LodCache;
 import me.bestnuts.lod.cache.SurfaceChangeTracker;
+import me.bestnuts.lod.api.LodRenderApi;
 import me.bestnuts.lod.command.LodCommand;
 import me.bestnuts.lod.view.LodAutoFill;
 import me.bestnuts.lod.view.LodViewService;
+import org.bukkit.plugin.ServicePriority;
 import org.bukkit.plugin.java.JavaPlugin;
 
 public final class VanillaLodPlugin extends JavaPlugin {
@@ -37,6 +39,7 @@ public final class VanillaLodPlugin extends JavaPlugin {
         new LodAutoFill(this, cache, filler, settings).start();
         getLifecycleManager().registerEventHandler(LifecycleEvents.COMMANDS,
                 event -> event.registrar().register("lod", new LodCommand(this, cache, views, filler)));
+        getServer().getServicesManager().register(LodRenderApi.class, views, this, ServicePriority.Normal);
 
         long saveInterval = settings.saveIntervalMinutes() * TICKS_PER_MINUTE;
         getServer().getScheduler().runTaskTimerAsynchronously(this, cache::saveAll, saveInterval, saveInterval);

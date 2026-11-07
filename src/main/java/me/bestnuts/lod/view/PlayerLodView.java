@@ -39,6 +39,10 @@ final class PlayerLodView {
         return world;
     }
 
+    TileAnchor home() {
+        return home;
+    }
+
     void update() {
         Location location = player.getLocation();
         if (home == null || home.distance(location) > shared.reanchorDistance()) {

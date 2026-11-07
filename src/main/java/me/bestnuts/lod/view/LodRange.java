@@ -13,13 +13,17 @@ public record LodRange(double inner, double outer, int terrainFloorY) {
 
     public static LodRange of(Player player, LodSettings settings) {
         World world = player.getWorld();
-        int renderDistance = Math.min(player.getSendViewDistance(), player.getClientViewDistance());
+        int renderDistance = renderDistanceChunks(player);
         // The client's section graph never steps to a section more than the render distance away vertically from the
         // camera's section, so surfaces below that layer vanish when flying high even though their chunks are loaded.
         int cameraSection = Math.floorDiv(player.getEyeLocation().getBlockY(), 16);
         int terrainFloorY = Math.max(world.getMinHeight(), (cameraSection - renderDistance) * 16);
         double inner = terrainFloorY >= world.getMaxHeight() ? 0.0 : renderDistance * 16.0;
         return new LodRange(inner, Math.max(inner, LodBits.horizon(settings.maxDistance())), terrainFloorY);
+    }
+
+    static int renderDistanceChunks(Player player) {
+        return Math.min(player.getSendViewDistance(), player.getClientViewDistance());
     }
 
     /**

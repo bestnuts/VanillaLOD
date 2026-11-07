@@ -27,7 +27,7 @@ vec3 cellFirstBand(vec3 ws_position, float horizonSteps) {
 
 // Scaling along the view ray keeps the screen position and only changes depth.
 vec3 cellDepthPosition(vec3 ws_position, float horizon) {
-    float renderDistance = max(FogRenderDistanceEnd, 16.0f);
+    float renderDistance = max(FogRenderDistanceEnd, lodMinDepthRenderDistance);
     float keep = renderDistance * lodDepthKeepScale;
     float limit = renderDistance * lodDepthLimitScale;
     float rayLength = length(ws_position);

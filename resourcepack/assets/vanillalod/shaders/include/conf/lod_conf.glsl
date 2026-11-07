@@ -63,6 +63,11 @@ const float lodAtmosphericFogMin = 256.0f;
 // horizon lands at lodDepthLimitScale x render distance.
 const float lodDepthKeepScale = 1.5f;
 const float lodDepthLimitScale = 3.8f;
+const float lodMinDepthRenderDistance = 16.0f;
+
+// Render proxies carry horizon steps - 1 in their brightness override: the low digit as block light, the high one as
+// sky light.
+const float lodProxyLightLevels = 16.0f;
 
 // Pushes LOD vertices slightly back along the view ray so overlapping real terrain always wins the depth test.
 const float lodDepthPush = 0.004f;

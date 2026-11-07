@@ -8,6 +8,14 @@ public final class LodBits {
     public static final int HORIZON_STEP = 1024;
     // Keeps the deepest band within float precision of a few millimetres.
     public static final int MAX_HORIZON_STEPS = 32;
+    // Vanilla clips at 4x the render distance. LOD past DEPTH_KEEP_SCALE x render distance is squeezed linearly so the
+    // horizon lands at DEPTH_LIMIT_SCALE x render distance.
+    public static final double DEPTH_KEEP_SCALE = 1.5;
+    public static final double DEPTH_LIMIT_SCALE = 3.8;
+    public static final int MIN_DEPTH_RENDER_DISTANCE = 16;
+    // Render proxies carry horizon steps - 1 in their brightness override: the low digit as block light, the high one
+    // as sky light.
+    public static final int PROXY_LIGHT_LEVELS = 16;
     public static final int MAX_LEVEL = 7;
     public static final int MAX_HEIGHT = 510;
     public static final int MAX_WALL_DEPTH_STEPS = 31;
