@@ -92,7 +92,8 @@ public final class LodViewService implements LodCache.Listener, Listener, LodRen
         if (task != null) {
             task.cancel();
         }
-        views.values().forEach(PlayerLodView::close);
+        // Paper rejects hideEntity from a disabling plugin, so views are dropped without hiding and every display is
+        // removed outright instead.
         views.clear();
         worlds.values().forEach(SharedTiles::close);
         worlds.clear();
